@@ -8,7 +8,7 @@
     "test": "node --test plugins/touch-grass/test/*.test.mjs",
     "check": "node --check plugins/touch-grass/bin/touch-grass.mjs && node --check plugins/touch-grass/src/config.mjs && node --check plugins/touch-grass/src/engine.mjs && node --check plugins/touch-grass/src/launcher.mjs",
     "doctor": "node plugins/touch-grass/bin/touch-grass.mjs doctor",
-    "demo": "TOUCH_GRASS_DRY_RUN=1 node plugins/touch-grass/bin/touch-grass.mjs test nap",
+    "demo": "TOUCH_GRASS_DRY_RUN=1 node plugins/touch-grass/bin/touch-grass.mjs test bedtime",
     "build:macos-helper": "sh plugins/touch-grass/scripts/build-macos-app.sh"
   },
   "engines": {

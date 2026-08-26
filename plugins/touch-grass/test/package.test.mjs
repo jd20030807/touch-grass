@@ -16,6 +16,17 @@ test('both host manifests identify the same plugin version', async () => {
   assert.equal(claude.version, codex.version.split('+')[0]);
 });
 
+test('popup is constrained to a notification-sized banner', async () => {
+  const [css, swift] = await Promise.all([
+    readFile(path.join(pluginRoot, 'ui', 'reminder.css'), 'utf8'),
+    readFile(path.join(pluginRoot, 'native', 'macos', 'TouchGrassPopup.swift'), 'utf8')
+  ]);
+  assert.match(css, /width: min\(100%, 394px\)/);
+  assert.match(css, /min-height: 104px/);
+  assert.match(swift, /let width: CGFloat = 414/);
+  assert.match(swift, /let height: CGFloat = 124/);
+});
+
 test('hook commands stay inside the installed plugin root', async () => {
   const hooks = JSON.parse(await readFile(path.join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
   for (const groups of Object.values(hooks.hooks)) {
@@ -29,7 +40,7 @@ test('hook commands stay inside the installed plugin root', async () => {
 });
 
 test('reminder payload is encoded into a local file URL', () => {
-  const url = reminderUrl({ id: 'nap', title: 'Nap', message: 'Rest.', durationSeconds: 10 });
+  const url = reminderUrl({ id: 'bedtime', title: 'Bedtime', message: 'Rest.', durationSeconds: 10 });
   assert.match(url, /^file:/);
   assert.doesNotMatch(url, /title=Nap/);
   assert.ok(new URL(url).searchParams.get('data'));

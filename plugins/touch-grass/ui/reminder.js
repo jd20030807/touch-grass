@@ -27,55 +27,50 @@
     }
     window.close();
   }
+
   const title = document.querySelector('#title');
   const message = document.querySelector('#message');
-  const eyebrow = document.querySelector('#eyebrow');
   const pet = document.querySelector('#pet');
   const icon = document.querySelector('#icon');
   const iconText = document.querySelector('#icon-text');
   const placeholder = document.querySelector('#placeholder');
-  const countdown = document.querySelector('#countdown');
-  const done = document.querySelector('#done');
+  const close = document.querySelector('#close');
   const progress = document.querySelector('#progress');
 
   title.textContent = payload.title;
   message.textContent = payload.message;
-  eyebrow.textContent = payload.companionName ? `${payload.companionName} has a suggestion` : 'Your cat has a suggestion';
   document.title = `Touch Grass — ${payload.title}`;
+
+  function showFallback() {
+    pet.hidden = true;
+    if (payload.iconUrl) {
+      icon.src = payload.iconUrl;
+      icon.alt = `${payload.id} reminder icon`;
+      placeholder.hidden = false;
+    } else {
+      iconText.textContent = payload.iconText || '•';
+      iconText.hidden = false;
+    }
+  }
 
   if (payload.assetUrl) {
     pet.src = payload.assetUrl;
-    pet.alt = payload.companionName ? `${payload.companionName} doing the ${payload.id} reminder` : `${payload.id} reminder`;
+    pet.alt = payload.companionName
+      ? `${payload.companionName} doing the ${payload.id} reminder`
+      : `${payload.id} reminder`;
     pet.hidden = false;
-    pet.addEventListener('error', () => {
-      pet.hidden = true;
-      if (payload.iconUrl) {
-        icon.src = payload.iconUrl;
-        placeholder.hidden = false;
-      }
-    });
-  } else if (payload.iconUrl) {
-    icon.src = payload.iconUrl;
-    icon.alt = `${payload.id} reminder icon`;
-    placeholder.hidden = false;
-  } else {
-    iconText.textContent = payload.iconText || '•';
-    iconText.hidden = false;
-  }
+    pet.addEventListener('error', showFallback);
+  } else showFallback();
 
-  let remaining = Math.max(5, Number(payload.durationSeconds) || 18);
-  const total = remaining;
-  countdown.textContent = `${remaining}s`;
-  const timer = setInterval(() => {
-    remaining -= 1;
-    countdown.textContent = `${remaining}s`;
-    progress.style.transform = `scaleX(${Math.max(0, remaining / total)})`;
-    if (remaining <= 0) {
-      clearInterval(timer);
-      closeReminder();
-    }
-  }, 1000);
+  const duration = Math.max(5, Number(payload.durationSeconds) || 18);
+  progress.style.setProperty('--duration', `${duration}s`);
+  const timer = window.setTimeout(closeReminder, duration * 1000);
 
-  done.addEventListener('click', closeReminder);
-  done.focus();
+  close.addEventListener('click', () => {
+    window.clearTimeout(timer);
+    closeReminder();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') close.click();
+  });
 })();

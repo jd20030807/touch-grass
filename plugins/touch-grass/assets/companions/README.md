@@ -10,10 +10,10 @@ stretch.gif
 snack.gif
 walk.gif
 eyes.gif
-nap.gif
+bedtime.gif
 ```
 
-GIF and animated WebP are supported. Keep each asset under 2 MB and readable in a 190 × 216 px stage; transparent backgrounds are preferred. All six actions are required for a complete cat pack. The action-icon placeholder exists only for development and blocks release readiness.
+GIF and animated WebP are supported. Keep each asset under 2 MB and readable in a 92 × 104 px vignette; transparent backgrounds are preferred. All six actions are required for a complete cat pack. The bedtime animation serves both the wind-down and bedtime stages. The action-icon placeholder exists only for development and blocks release readiness.
 
 Users can keep personal assets anywhere on their computer and import them with:
 

@@ -77,7 +77,7 @@ export function resolveReminderCommand(url, env = process.env) {
   if (browser) {
     const browserArgs = [
       `--app=${url}`,
-      '--window-size=590,270',
+      '--window-size=414,124',
       '--window-position=32,54',
       '--no-first-run',
       '--no-default-browser-check',

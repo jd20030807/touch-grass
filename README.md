@@ -8,7 +8,7 @@ Codex + Claude Code · local-only · cat GIFs required
 
 </div>
 
-Touch Grass notices when an agent session has stayed active for a while, then opens a small local banner with a cat doing the suggested break: drinking water, stretching, snacking, walking, resting its eyes, or napping.
+Touch Grass notices sustained agent activity, then opens a notification-sized local banner with a cat doing the suggested break: drinking water, stretching, snacking, walking, resting its eyes, or getting ready for bed.
 
 There is no settings website. People customize it by talking to Codex or Claude Code, and the agent answers in ordinary language. The plugin, preferences, timing data, banner, and cat files all stay on the computer.
 
@@ -19,7 +19,8 @@ There is no settings website. People customize it by talking to Codex or Claude 
 
 - One local plugin package for Codex and Claude Code
 - A compact native macOS popup banner fed by local agent hooks
-- Six built-in reminder types: water, stretch, snack, walk, eyes, and nap
+- Six built-in reminder groups: water, stretch, snack, walk, eyes, and two-stage bedtime
+- Independent schedules for every reminder instead of one random rotation
 - A matching animated cat asset required for every reminder
 - Conversational customization with no settings panel or technical settings dump
 - Quiet periods, snoozing, reminder choices, timing changes, and cat rotation
@@ -66,10 +67,10 @@ Ask either agent:
 
 ```text
 What can I customize in Touch Grass?
-Remind me to take a break every minute while I test this.
+Remind me to walk around every minute while I test this.
 ```
 
-The first request displays the one-time introduction and customization examples. For automatic timing, keep using the agent for at least a minute and cause another prompt or tool event. Afterwards, say `Remind me about every 50 minutes again.`
+The first request displays the one-time introduction and customization examples. For automatic timing, keep using the agent for at least a minute and cause another prompt or tool event. Afterwards, say `Remind me to walk around every two hours again.`
 
 The current popup uses the deliberate art placeholder. It is not a substitute cat and will be replaced only after the real-cat art pass.
 
@@ -78,12 +79,12 @@ The current popup uses the deliberate art placeholder. It is not a substitute ca
 There is no control panel to learn. Try phrases such as:
 
 ```text
-Remind me to take a break every 40 minutes.
-Don't remind me about snacks anymore.
-Keep nap reminders, but turn walks off.
-Don't interrupt me between 10 PM and 8 AM.
-Snooze reminders for half an hour.
-Use my cat Mochi for icon from /absolute/path/to/mochi.
+Remind me to walk around every 40 minutes.
+Keep quiet from 10 PM to 8 AM.
+Turn off snack and bedtime reminders.
+Snooze reminders for 30 minutes.
+Use my cat Mochi from /absolute/path/to/mochi.
+Add a breathing reminder with this GIF.
 ```
 
 Touch Grass responds in the same style—for example, `Okay, I won't remind you about snacks anymore.` It does not expose internal field names or announce configuration mutations.
@@ -98,7 +99,7 @@ stretch.gif
 snack.gif
 walk.gif
 eyes.gif
-nap.gif
+bedtime.gif
 ```
 
 Animated WebP files with the same names also work. Static images and incomplete packs are rejected because the cat action is part of every reminder, not an optional decoration.
@@ -114,7 +115,7 @@ Rotate through my cats.
 
 The plugin receives lifecycle events from the active coding agent and stores only enough local timing state to recognize a continuing coding stretch. It does not inspect screen activity, keystrokes, prompts, transcripts, source code, tool arguments, or tool results.
 
-A reminder appears on the next agent event after a break becomes due, so it may not appear at the exact second. A meaningful pause naturally starts a fresh coding stretch.
+A reminder appears on the next agent event after it becomes due, so it may not appear at the exact second. Eye, water, stretch, and walk reminders keep separate active-coding clocks; a meaningful pause starts each of those clocks fresh. Snack and bedtime reminders use local clock time and only appear while the coding agent is active near the scheduled moment.
 
 ```text
 Codex hooks ──────┐
@@ -146,15 +147,17 @@ npm test
 npm run check
 npm run build:macos-helper
 npm run doctor
-TOUCH_GRASS_HOME="$(mktemp -d)" node plugins/touch-grass/bin/touch-grass.mjs test nap --dry-run
+TOUCH_GRASS_HOME="$(mktemp -d)" node plugins/touch-grass/bin/touch-grass.mjs test bedtime --dry-run
 ```
 
 The low-level CLI remains available for development, but the normal interface is conversation:
 
 ```text
 touch-grass settings
-touch-grass test nap
+touch-grass test bedtime
 touch-grass reminders disable snack
+touch-grass reminders interval walk 40
+touch-grass reminders bedtime 23:00 --wind-down 30
 touch-grass companions add mochi --name "Mochi" --dir /path/to/mochi
 touch-grass companions use rotate
 touch-grass snooze 15

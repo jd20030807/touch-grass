@@ -93,13 +93,13 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.setValue(false, forKey: "drawsBackground")
 
-        let width: CGFloat = 590
-        let height: CGFloat = 270
+        let width: CGFloat = 414
+        let height: CGFloat = 124
         let visibleFrame = NSScreen.main?.visibleFrame
             ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let frame = NSRect(
-            x: visibleFrame.maxX - width - 24,
-            y: visibleFrame.maxY - height - 24,
+            x: visibleFrame.maxX - width - 14,
+            y: visibleFrame.maxY - height - 14,
             width: width,
             height: height
         )

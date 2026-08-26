@@ -31,17 +31,27 @@
     },
     {
       "id": "eyes",
-      "title": "Look somewhere far away",
-      "message": "Give your eyes twenty seconds off the screen.",
+      "title": "Give your eyes a horizon",
+      "message": "Look about 20 feet away for 20 seconds.",
       "iconText": "👀",
       "icon": "eyes.svg"
     },
     {
-      "id": "nap",
-      "title": "Maybe you need a nap",
-      "message": "If focus keeps slipping, a short reset may beat another push.",
+      "id": "bedtime",
+      "title": "It’s bedtime",
+      "message": "You’ve done enough for tonight. Save your work and let the code rest.",
       "iconText": "🌙",
-      "icon": "nap.svg"
+      "icon": "bedtime.svg",
+      "stages": {
+        "windDown": {
+          "title": "Start winding down",
+          "message": "Bedtime is in 20 minutes. Wrap up this thought and save your place."
+        },
+        "bedtime": {
+          "title": "It’s bedtime",
+          "message": "You’ve done enough for tonight. Save your work and let the code rest."
+        }
+      }
     }
   ]
 }

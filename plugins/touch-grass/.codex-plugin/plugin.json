@@ -1,6 +1,6 @@
 {
   "name": "touch-grass",
-  "version": "0.1.0+codex.20260826093953",
+  "version": "0.1.0+codex.20260826192616",
   "description": "Local cat-GIF popup reminders for long vibe-coding sessions.",
   "author": {
     "name": "Touch Grass contributors",
@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Touch Grass",
     "shortDescription": "Gentle local break reminders while you code.",
-    "longDescription": "Tracks active agent time locally and opens cat-GIF reminder banners for water, stretching, snacks, walking, eye rest, or a nap.",
+    "longDescription": "Keeps separate local schedules for water, stretching, snacks, walking, eye rest, and bedtime, then opens a compact cat-GIF banner when one is due.",
     "developerName": "Touch Grass contributors",
     "category": "Productivity",
     "capabilities": [
@@ -28,8 +28,8 @@
     ],
     "defaultPrompt": [
       "Introduce Touch Grass and tell me how I can personalize it.",
-      "Remind me to take a break every 45 minutes.",
-      "Don't remind me about snacks anymore."
+      "Remind me to walk around every 40 minutes.",
+      "Keep quiet from 10 PM to 8 AM."
     ],
     "brandColor": "#78A968"
   }

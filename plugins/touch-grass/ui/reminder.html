@@ -8,28 +8,35 @@
     <link rel="stylesheet" href="./reminder.css">
   </head>
   <body>
-    <main class="stage" aria-live="polite">
-      <section class="banner" id="banner">
+    <!--
+      THESIS: A real notification-sized pause led by the cat action; it refuses the old mini-poster scale and decorative card chrome.
+      OWN-WORLD: Warm cloud, herb ink, quiet sage, and a honey time-line; one square cat vignette joins a calm system notification.
+      STORY: Recognize Touch Grass, understand one humane suggestion, dismiss it, and return to work refreshed.
+      FIRST VIEWPORT: A 394 × 104 banner with a 92px cat vignette, two short text lines, and one compact close control.
+      FORM: Native message-notification banner, the user's pinned convention; seed key 380a88e4.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
+    <main class="stage">
+      <section class="banner" id="banner" role="status" aria-labelledby="title" aria-describedby="message">
         <div class="visual" id="visual">
+          <img class="visual__pet" id="pet" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="" hidden>
           <div class="visual__placeholder" id="placeholder" hidden>
-            <img class="visual__icon" id="icon" alt="">
-            <span>cat GIF<br>lands here</span>
+            <img class="visual__icon" id="icon" src="../assets/actions/water.svg" alt="">
+            <span>cat GIF pending</span>
           </div>
-          <img class="visual__pet" id="pet" alt="" hidden>
           <span class="visual__text" id="icon-text" aria-hidden="true" hidden></span>
           <span class="visual__ground" aria-hidden="true"></span>
         </div>
 
         <div class="copy">
-          <div class="topline">
-            <span class="brand"><span class="brand__dot" aria-hidden="true"></span>touch grass</span>
-            <span class="countdown" id="countdown" aria-label="Seconds until this reminder closes"></span>
-          </div>
-          <p class="eyebrow" id="eyebrow">Your cat has a suggestion</p>
+          <span class="brand">Touch Grass</span>
           <h1 id="title">Time for a break</h1>
           <p class="message" id="message">Move around for a moment.</p>
-          <button type="button" id="done">Got it</button>
         </div>
+
+        <button type="button" class="close" id="close" aria-label="Dismiss reminder">
+          <span aria-hidden="true"></span>
+        </button>
         <span class="progress" id="progress" aria-hidden="true"></span>
       </section>
     </main>

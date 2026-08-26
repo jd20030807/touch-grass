@@ -4,7 +4,8 @@
 
 - Initial local-first activity engine
 - Codex and Claude Code marketplace/plugin packaging
-- Water, stretch, snack, walk, eye-rest, and nap presets
+- Water, stretch, snack, walk, eye-rest, and two-stage bedtime presets
+- Independent active-time and clock-time schedules for each reminder group
 - Local popup reminder banner with mandatory matching cat-GIF slots
 - Natural-language customization and acknowledgements with no settings panel
 - Chat-first configuration skill and custom companion import

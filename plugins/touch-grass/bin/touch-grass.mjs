@@ -3,6 +3,7 @@
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  CURRENT_ONBOARDING_VERSION,
   defaultConfig,
   getDataPaths,
   loadConfig,
@@ -58,8 +59,12 @@ function reminderPhrase(id) {
     snack: 'snack breaks',
     walk: 'short walks',
     eyes: 'screen breaks',
-    nap: 'nap breaks'
+    bedtime: 'bedtime reminders'
   })[id] ?? id.replaceAll('-', ' ');
+}
+
+function canonicalReminderId(id) {
+  return id === 'nap' ? 'bedtime' : id;
 }
 
 async function readStdin() {
@@ -70,16 +75,15 @@ async function readStdin() {
 
 async function setConfigValue(key, rawValue) {
   const aliases = {
-    interval: 'intervalMinutes',
     'idle-reset': 'idleResetMinutes',
     duration: 'reminderDurationSeconds'
   };
   const canonical = aliases[key] ?? key;
   const config = await updateConfig((current) => {
     if (canonical === 'enabled') current.enabled = boolValue(rawValue);
-    else if (['intervalMinutes', 'idleResetMinutes', 'reminderDurationSeconds'].includes(canonical)) {
+    else if (['idleResetMinutes', 'reminderDurationSeconds'].includes(canonical)) {
       current[canonical] = Number(rawValue);
-    } else if (canonical === 'order') current.order = rawValue;
+    }
     else if (canonical === 'companion') current.companion = rawValue;
     else if (canonical === 'quiet-hours') {
       if (String(rawValue).toLowerCase() === 'off') current.quietHours.enabled = false;
@@ -91,9 +95,7 @@ async function setConfigValue(key, rawValue) {
     } else throw new Error(`Unknown setting: ${key}`);
     return current;
   });
-  if (canonical === 'intervalMinutes') {
-    print(`Okay — I'll nudge you to take a break about every ${config.intervalMinutes} minutes while you're coding.`);
-  } else if (canonical === 'reminderDurationSeconds') {
+  if (canonical === 'reminderDurationSeconds') {
     print(`Okay — each reminder will hang around for ${config.reminderDurationSeconds} seconds.`);
   } else if (canonical === 'quiet-hours') {
     print(config.quietHours.enabled
@@ -105,12 +107,67 @@ async function setConfigValue(key, rawValue) {
     print(config.companion === 'rotate'
       ? `Okay — I'll rotate through your cats.`
       : `Okay — ${config.companion} will bring your reminders.`);
-  } else if (canonical === 'order') {
-    print(config.order === 'shuffle' ? `Okay — I'll keep the reminders varied.` : `Okay — I'll take the reminders in a steady rotation.`);
   } else print('Okay — I adjusted how Touch Grass notices an active coding stretch.');
 }
 
-async function setReminderEnabled(id, enabled) {
+async function setReminderInterval(rawId, rawMinutes) {
+  const id = canonicalReminderId(rawId);
+  const minutes = Number(rawMinutes);
+  const config = await updateConfig((current) => {
+    if (current.reminderSchedules[id]) {
+      current.reminderSchedules[id] = { kind: 'active', intervalMinutes: minutes };
+      return current;
+    }
+    const reminder = current.customReminders.find((item) => item.id === id);
+    if (!reminder) throw new Error(`Unknown reminder: ${id}`);
+    reminder.schedule = { kind: 'active', intervalMinutes: minutes };
+    return current;
+  });
+  const schedule = config.reminderSchedules[id]
+    ?? config.customReminders.find((item) => item.id === id)?.schedule;
+  print(`Okay — I'll remind you about ${reminderPhrase(id)} every ${schedule.intervalMinutes} minutes while you're actively coding.`);
+}
+
+async function setReminderTimes(rawId, rawTimes) {
+  const id = canonicalReminderId(rawId);
+  const times = String(rawTimes).split(',').map((time) => time.trim()).filter(Boolean);
+  const config = await updateConfig((current) => {
+    if (id === 'bedtime') throw new Error('Use reminders bedtime HH:MM for the two-stage bedtime reminder.');
+    if (current.reminderSchedules[id]) {
+      current.reminderSchedules[id] = { kind: 'clock', times, graceMinutes: 60 };
+      return current;
+    }
+    const reminder = current.customReminders.find((item) => item.id === id);
+    if (!reminder) throw new Error(`Unknown reminder: ${id}`);
+    reminder.schedule = { kind: 'clock', times, graceMinutes: 60 };
+    return current;
+  });
+  const schedule = config.reminderSchedules[id]
+    ?? config.customReminders.find((item) => item.id === id)?.schedule;
+  print(`Okay — I'll bring ${reminderPhrase(id)} at ${schedule.times.map(friendlyTime).join(' and ')}.`);
+}
+
+async function setBedtime(time, rawWindDownMinutes = 20) {
+  const config = await updateConfig((current) => {
+    current.reminderSchedules.bedtime = {
+      kind: 'bedtime',
+      time,
+      windDownMinutes: Number(rawWindDownMinutes),
+      graceMinutes: current.reminderSchedules.bedtime?.graceMinutes ?? 120
+    };
+    return current;
+  });
+  const schedule = config.reminderSchedules.bedtime;
+  const windDownAt = (() => {
+    const [hours, minutes] = schedule.time.split(':').map(Number);
+    const total = (hours * 60 + minutes - schedule.windDownMinutes + 1440) % 1440;
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  })();
+  print(`Okay — I'll help you wind down at ${friendlyTime(windDownAt)} and remind you again at bedtime at ${friendlyTime(schedule.time)}.`);
+}
+
+async function setReminderEnabled(rawId, enabled) {
+  const id = canonicalReminderId(rawId);
   const presets = await loadPresets();
   const presetIds = new Set(presets.reminders.map((item) => item.id));
   await updateConfig((current) => {
@@ -131,7 +188,8 @@ async function setReminderEnabled(id, enabled) {
     : `Okay — I won't remind you about ${reminderPhrase(id)} anymore.`);
 }
 
-async function addReminder(id, flags) {
+async function addReminder(rawId, flags) {
+  const id = canonicalReminderId(rawId);
   if (!flags.title || !flags.message || !flags.gif) {
     throw new Error('A custom reminder needs --title, --message, and a matching animated --gif.');
   }
@@ -149,6 +207,9 @@ async function addReminder(id, flags) {
       message: flags.message,
       iconText: flags.icon ?? '•',
       enabled: true,
+      schedule: flags.at
+        ? { kind: 'clock', times: String(flags.at).split(',').map((time) => time.trim()), graceMinutes: 60 }
+        : { kind: 'active', intervalMinutes: Number(flags.interval) || 60 },
       assetPath
     });
     return current;
@@ -157,7 +218,8 @@ async function addReminder(id, flags) {
   print(`Lovely — I'll add “${reminder.title}” to the reminder mix.`);
 }
 
-async function removeReminder(id) {
+async function removeReminder(rawId) {
+  const id = canonicalReminderId(rawId);
   await updateConfig((current) => {
     const before = current.customReminders.length;
     current.customReminders = current.customReminders.filter((item) => item.id !== id);
@@ -176,7 +238,11 @@ async function addCompanion(id, flags) {
   const extensions = ['gif', 'webp'];
   const assets = {};
   for (const reminder of presets.reminders) {
-    const filename = extensions.map((ext) => `${reminder.id}.${ext}`).find((candidate) => files.has(candidate));
+    const candidates = extensions.flatMap((ext) => [
+      `${reminder.id}.${ext}`,
+      ...(reminder.id === 'bedtime' ? [`nap.${ext}`] : [])
+    ]);
+    const filename = candidates.find((candidate) => files.has(candidate));
     if (filename) assets[reminder.id] = path.join(directory, filename);
   }
   const missing = presets.reminders.map((item) => item.id).filter((action) => !assets[action]);
@@ -244,31 +310,37 @@ async function doctor() {
 }
 
 function introductionCopy() {
-  return `Touch Grass starts with six built-in break reminders:
+  return `Touch Grass is a local break-reminder companion for Codex and Claude Code. It starts with six built-in reminder groups, each with its own rhythm:
 
-- Drink water
-- Stand up and stretch
-- Get a snack
-- Take a short walk around the room
-- Rest your eyes away from the screen
-- Take a nap or short rest
+- Drink water — every 30 minutes of active coding
+- Stretch — every hour of active coding
+- Get a snack — at 10:30 AM and 3:30 PM
+- Take a short walk — every two hours of active coding
+- Rest your eyes — every 20 minutes, look about 20 feet away for 20 seconds
+- Bedtime — wind down at 9:40 PM, then a bedtime reminder at 10 PM
 
-By default, Touch Grass checks in about every 50 minutes while you’re actively using your coding agent. Quiet hours are off, so reminders can appear at any time until you ask for a quiet period. Each local popup banner stays visible for 18 seconds unless you dismiss it sooner. The suggestions vary instead of following a fixed order.
+When you step away from Codex or Claude Code for a while, the activity-based reminders start counting fresh when you return. Touch Grass starts with no quiet hours.
 
-You can customize Touch Grass by saying things like:
+Everything stays on your computer.
 
-- “Remind me to take a break every 40 minutes.”
-- “Don’t remind me about snacks anymore.”
-- “Keep nap reminders, but turn walks off.”
-- “Don’t interrupt me between 10 PM and 8 AM.”
-- “Snooze reminders for half an hour.”
-- “Use my cat Mochi for icon from \`/absolute/path/to/mochi\`.”
+You can personalize it naturally by telling me things like:
 
-Everything stays on your computer.`;
+- “Remind me to walk around every 40 minutes.”
+- “Keep quiet from 10 PM to 8 AM.”
+- “Turn off snack and bedtime reminders.”
+- “Snooze reminders for 30 minutes.”
+- “Use my cat Mochi from \`/absolute/path/to/mochi\`.”
+- “Add a breathing reminder with this GIF.”
+
+Tell me any preference in plain language, and I can configure it for you.`;
 }
 
 async function markOnboardingShown() {
-  await updateState((current) => ({ ...current, onboardingShown: true }));
+  await updateState((current) => ({
+    ...current,
+    onboardingShown: true,
+    onboardingVersion: CURRENT_ONBOARDING_VERSION
+  }));
 }
 
 async function showSettings() {
@@ -278,7 +350,7 @@ async function showSettings() {
 
 async function showWelcome() {
   const state = await loadState();
-  if (state.onboardingShown) return;
+  if (state.onboardingVersion >= CURRENT_ONBOARDING_VERSION) return;
   await markOnboardingShown();
   print(introductionCopy());
 }
@@ -292,10 +364,13 @@ Usage:
   touch-grass settings
   touch-grass test [reminder-id] [--dry-run]
   touch-grass config get
-  touch-grass config set <interval|duration|order|companion|quiet-hours|enabled> <value>
+  touch-grass config set <duration|companion|quiet-hours|enabled> <value>
   touch-grass reminders list
   touch-grass reminders enable|disable <id>
-  touch-grass reminders add <id> --title "..." --message "..." --gif /path/file.gif [--icon "..."]
+  touch-grass reminders interval <id> <minutes>
+  touch-grass reminders times <id> <HH:MM[,HH:MM]>
+  touch-grass reminders bedtime <HH:MM> [--wind-down <minutes>]
+  touch-grass reminders add <id> --title "..." --message "..." --gif /path/file.gif [--interval <minutes>|--at <HH:MM,...>]
   touch-grass reminders remove <id>
   touch-grass companions list
   touch-grass companions add <id> --name "..." --dir /path/to/assets
@@ -363,6 +438,21 @@ async function main() {
     await setReminderEnabled(positionals[1], positionals[0] === 'enable');
     return;
   }
+  if (command === 'reminders' && positionals[0] === 'interval') {
+    if (!positionals[1] || positionals[2] === undefined) throw new Error('reminders interval requires an id and minutes.');
+    await setReminderInterval(positionals[1], positionals[2]);
+    return;
+  }
+  if (command === 'reminders' && positionals[0] === 'times') {
+    if (!positionals[1] || !positionals[2]) throw new Error('reminders times requires an id and one or more comma-separated times.');
+    await setReminderTimes(positionals[1], positionals[2]);
+    return;
+  }
+  if (command === 'reminders' && positionals[0] === 'bedtime') {
+    if (!positionals[1]) throw new Error('reminders bedtime requires HH:MM.');
+    await setBedtime(positionals[1], flags['wind-down'] ?? 20);
+    return;
+  }
   if (command === 'reminders' && positionals[0] === 'add') {
     if (!positionals[1]) throw new Error('reminders add requires an id.');
     await addReminder(positionals[1], flags);
@@ -403,8 +493,12 @@ async function main() {
     return;
   }
   if (command === 'reset-activity') {
-    const state = await updateState((current) => ({ ...current, activeMs: 0, lastActivityAt: new Date().toISOString() }));
-    print({ activeMinutes: state.activeMs / 60_000 });
+    const state = await updateState((current) => ({
+      ...current,
+      activeMsByReminder: {},
+      lastActivityAt: new Date().toISOString()
+    }));
+    print({ activeMinutesByReminder: state.activeMsByReminder });
     return;
   }
   if (command === 'reset') {

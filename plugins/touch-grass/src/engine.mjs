@@ -37,6 +37,7 @@ export async function availableReminders(config) {
     .map((item) => ({
       ...item,
       kind: 'preset',
+      schedule: config.reminderSchedules[item.id],
       iconPath: path.join(PLUGIN_ROOT, 'assets', 'actions', item.icon)
     }));
   const custom = config.customReminders
@@ -56,7 +57,7 @@ export async function availableCompanions(config) {
       bundled: true,
       assets: Object.fromEntries(
         Object.entries(item.assets ?? {}).map(([action, relativePath]) => [
-          action,
+          action === 'nap' ? 'bedtime' : action,
           path.join(PLUGIN_ROOT, 'assets', 'companions', item.id, relativePath)
         ])
       )
@@ -65,21 +66,6 @@ export async function availableCompanions(config) {
     if (error.code !== 'ENOENT') throw error;
   }
   return [...bundled, ...config.companions];
-}
-
-function chooseReminder(reminders, config, state, random = Math.random) {
-  if (reminders.length === 0) return null;
-  let index;
-  if (config.order === 'cycle') {
-    index = state.nextReminderIndex % reminders.length;
-    state.nextReminderIndex = (index + 1) % reminders.length;
-  } else {
-    index = Math.min(reminders.length - 1, Math.floor(random() * reminders.length));
-    if (reminders.length > 1 && reminders[index].id === state.lastReminderId) {
-      index = (index + 1) % reminders.length;
-    }
-  }
-  return reminders[index];
 }
 
 function chooseCompanion(companions, config, state) {
@@ -92,14 +78,16 @@ function chooseCompanion(companions, config, state) {
   return companions.find((item) => item.id === config.companion) ?? companions[0];
 }
 
-async function toPayload(reminder, companion, durationSeconds) {
+async function toPayload(reminder, companion, durationSeconds, presentation = {}) {
+  const assetAction = presentation.assetAction ?? reminder.id;
   let assetPath = reminder.assetPath ?? null;
-  if (companion?.assets?.[reminder.id]) assetPath = companion.assets[reminder.id];
+  if (companion?.assets?.[assetAction]) assetPath = companion.assets[assetAction];
   if (assetPath && !(await pathExists(assetPath))) assetPath = null;
   return {
-    id: reminder.id,
-    title: reminder.title,
-    message: reminder.message,
+    id: assetAction,
+    eventId: presentation.eventId ?? reminder.id,
+    title: presentation.title ?? reminder.title,
+    message: presentation.message ?? reminder.message,
     iconText: reminder.iconText ?? null,
     iconPath: reminder.iconPath ?? null,
     assetPath,
@@ -110,9 +98,115 @@ async function toPayload(reminder, companion, durationSeconds) {
   };
 }
 
+function dateAtLocalTime(reference, time, dayOffset = 0) {
+  const [hours, minutes] = time.split(':').map(Number);
+  return new Date(
+    reference.getFullYear(),
+    reference.getMonth(),
+    reference.getDate() + dayOffset,
+    hours,
+    minutes,
+    0,
+    0
+  );
+}
+
+function localStamp(date) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function clockCandidates(reminder, now, delivered) {
+  const candidates = [];
+  const graceMs = reminder.schedule.graceMinutes * 60_000;
+  for (const time of reminder.schedule.times) {
+    for (const offset of [-1, 0]) {
+      const occurrence = dateAtLocalTime(now, time, offset);
+      const age = now.getTime() - occurrence.getTime();
+      const occurrenceKey = `${reminder.id}@${localStamp(occurrence)}`;
+      if (age >= 0 && age <= graceMs && !delivered.has(occurrenceKey)) {
+        candidates.push({ reminder, occurrenceKey, scheduledAt: occurrence.getTime() });
+      }
+    }
+  }
+  return candidates;
+}
+
+function bedtimeCandidates(reminder, now, delivered) {
+  const candidates = [];
+  const schedule = reminder.schedule;
+  for (const offset of [-1, 0, 1]) {
+    const bedtime = dateAtLocalTime(now, schedule.time, offset);
+    const windDown = new Date(bedtime.getTime() - schedule.windDownMinutes * 60_000);
+    const bedtimeStamp = localStamp(bedtime);
+    const windDownKey = `${reminder.id}-wind-down@${bedtimeStamp}`;
+    if (now >= windDown && now < bedtime && !delivered.has(windDownKey)) {
+      candidates.push({
+        reminder,
+        occurrenceKey: windDownKey,
+        scheduledAt: windDown.getTime(),
+        presentation: {
+          assetAction: 'bedtime',
+          eventId: 'bedtime-wind-down',
+          title: reminder.stages?.windDown?.title ?? 'Start winding down',
+          message: `Bedtime is in ${schedule.windDownMinutes} minutes. Wrap up this thought and save your place.`
+        }
+      });
+    }
+
+    const age = now.getTime() - bedtime.getTime();
+    const bedtimeKey = `${reminder.id}@${bedtimeStamp}`;
+    if (age >= 0 && age <= schedule.graceMinutes * 60_000 && !delivered.has(bedtimeKey)) {
+      candidates.push({
+        reminder,
+        occurrenceKey: bedtimeKey,
+        scheduledAt: bedtime.getTime(),
+        presentation: {
+          assetAction: 'bedtime',
+          eventId: 'bedtime',
+          title: reminder.stages?.bedtime?.title ?? reminder.title,
+          message: reminder.stages?.bedtime?.message ?? reminder.message
+        }
+      });
+    }
+  }
+  return candidates;
+}
+
+function scheduledCandidates(reminders, state, now) {
+  const delivered = new Set(state.deliveredOccurrences);
+  return reminders
+    .flatMap((reminder) => {
+      if (reminder.schedule?.kind === 'clock') return clockCandidates(reminder, now, delivered);
+      if (reminder.schedule?.kind === 'bedtime') return bedtimeCandidates(reminder, now, delivered);
+      return [];
+    })
+    .sort((left, right) => right.scheduledAt - left.scheduledAt);
+}
+
+function updateActiveClocks(reminders, state, deltaMs, reset) {
+  if (reset) state.activeMsByReminder = {};
+  for (const reminder of reminders) {
+    if (reminder.schedule?.kind !== 'active') continue;
+    const previous = Math.max(0, Number(state.activeMsByReminder[reminder.id]) || 0);
+    state.activeMsByReminder[reminder.id] = previous + deltaMs;
+  }
+}
+
+function activeCandidates(reminders, state) {
+  return reminders
+    .filter((reminder) => reminder.schedule?.kind === 'active')
+    .map((reminder) => {
+      const intervalMs = reminder.schedule.intervalMinutes * 60_000;
+      const activeMs = state.activeMsByReminder[reminder.id] ?? 0;
+      return { reminder, intervalMs, activeMs, urgency: activeMs / intervalMs };
+    })
+    .filter((candidate) => candidate.activeMs >= candidate.intervalMs)
+    .sort((left, right) => right.urgency - left.urgency || left.intervalMs - right.intervalMs);
+}
+
 export async function recordActivity(input = {}, options = {}) {
   const nowMs = options.nowMs ?? Date.now();
-  const random = options.random ?? Math.random;
   const env = options.env ?? process.env;
 
   return withDataLock(async () => {
@@ -120,49 +214,59 @@ export async function recordActivity(input = {}, options = {}) {
     const state = await loadState(env);
     const previous = state.lastActivityAt ? Date.parse(state.lastActivityAt) : null;
     const now = new Date(nowMs);
+    const reminders = await availableReminders(config);
 
     if (!config.enabled) {
       state.lastActivityAt = now.toISOString();
-      state.activeMs = 0;
+      state.activeMsByReminder = {};
       await saveState(state, env);
       return { due: false, reason: 'disabled', config, state };
     }
 
+    let deltaMs = 0;
+    let reset = false;
     if (previous !== null) {
       const delta = Math.max(0, nowMs - previous);
-      if (delta > config.idleResetMinutes * 60_000) state.activeMs = 0;
-      else state.activeMs += delta;
+      reset = delta > config.idleResetMinutes * 60_000;
+      if (!reset) deltaMs = delta;
     }
+    updateActiveClocks(reminders, state, deltaMs, reset);
 
     state.lastActivityAt = now.toISOString();
     state.lastEventName = String(input.hook_event_name ?? input.event ?? 'activity');
     state.lastHost = inferHost(input, env);
 
-    const intervalMs = config.intervalMinutes * 60_000;
     const snoozed = state.snoozedUntil && Date.parse(state.snoozedUntil) > nowMs;
     const quiet = isQuietHours(config.quietHours, now);
-    const reminders = await availableReminders(config);
-    const eligible = state.activeMs >= intervalMs && !snoozed && !quiet && reminders.length > 0;
+    const scheduled = scheduledCandidates(reminders, state, now);
+    const active = activeCandidates(reminders, state);
+    const eligible = !snoozed && !quiet && reminders.length > 0 && (scheduled.length > 0 || active.length > 0);
 
     if (!eligible) {
       await saveState(state, env);
       return {
         due: false,
         reason: snoozed ? 'snoozed' : quiet ? 'quiet-hours' : reminders.length === 0 ? 'no-reminders' : 'not-due',
-        remainingMs: Math.max(0, intervalMs - state.activeMs),
         config,
         state
       };
     }
 
-    const reminder = chooseReminder(reminders, config, state, random);
+    const candidate = scheduled[0] ?? active[0];
+    const reminder = candidate.reminder;
     const companions = await availableCompanions(config);
     const companion = chooseCompanion(companions, config, state);
-    const payload = await toPayload(reminder, companion, config.reminderDurationSeconds);
-    state.activeMs = 0;
-    state.snoozedUntil = null;
+    const payload = await toPayload(reminder, companion, config.reminderDurationSeconds, candidate.presentation);
+
+    if (candidate.occurrenceKey) {
+      state.deliveredOccurrences = [...state.deliveredOccurrences, candidate.occurrenceKey].slice(-64);
+    } else {
+      state.activeMsByReminder[reminder.id] = 0;
+    }
+    if (state.snoozedUntil && Date.parse(state.snoozedUntil) <= nowMs) state.snoozedUntil = null;
     state.lastReminderAt = now.toISOString();
-    state.lastReminderId = reminder.id;
+    state.lastReminderAtById[reminder.id] = now.toISOString();
+    state.lastReminderId = payload.eventId;
     state.reminderCount += 1;
     await saveState(state, env);
 
@@ -175,22 +279,40 @@ export async function previewReminder(id, options = {}) {
   const config = await loadConfig(env);
   const state = await loadState(env);
   const reminders = await availableReminders(config);
-  const reminder = reminders.find((item) => item.id === id) ?? reminders[0];
+  const requestedId = id === 'nap' || id === 'bedtime-wind-down' ? 'bedtime' : id;
+  const reminder = reminders.find((item) => item.id === requestedId) ?? reminders[0];
   if (!reminder) throw new Error('No enabled reminders are available.');
   const companions = await availableCompanions(config);
   const companion = chooseCompanion(companions, config, state);
-  return toPayload(reminder, companion, config.reminderDurationSeconds);
+  let presentation = {};
+  if (id === 'bedtime-wind-down') {
+    const windDownMinutes = reminder.schedule?.windDownMinutes ?? 20;
+    presentation = {
+      assetAction: 'bedtime',
+      eventId: 'bedtime-wind-down',
+      title: reminder.stages?.windDown?.title,
+      message: `Bedtime is in ${windDownMinutes} minutes. Wrap up this thought and save your place.`
+    };
+  } else if (requestedId === 'bedtime') {
+    presentation = {
+      assetAction: 'bedtime',
+      eventId: 'bedtime',
+      title: reminder.stages?.bedtime?.title,
+      message: reminder.stages?.bedtime?.message
+    };
+  }
+  return toPayload(reminder, companion, config.reminderDurationSeconds, presentation);
 }
 
 export async function statusSnapshot(env = process.env) {
   const config = await loadConfig(env);
   const state = await loadState(env);
-  const remainingMs = Math.max(0, config.intervalMinutes * 60_000 - state.activeMs);
   return {
     enabled: config.enabled,
-    intervalMinutes: config.intervalMinutes,
-    activeMinutes: Math.round((state.activeMs / 60_000) * 10) / 10,
-    remainingMinutes: Math.ceil(remainingMs / 60_000),
+    schedules: config.reminderSchedules,
+    activeMinutesByReminder: Object.fromEntries(
+      Object.entries(state.activeMsByReminder).map(([id, value]) => [id, Math.round((value / 60_000) * 10) / 10])
+    ),
     snoozedUntil: state.snoozedUntil,
     lastReminderAt: state.lastReminderAt,
     lastReminderId: state.lastReminderId,
