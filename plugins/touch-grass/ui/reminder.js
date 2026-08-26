@@ -19,6 +19,14 @@
   }
 
   const payload = decodePayload();
+
+  function closeReminder() {
+    if (window.webkit?.messageHandlers?.touchGrass) {
+      window.webkit.messageHandlers.touchGrass.postMessage('close');
+      return;
+    }
+    window.close();
+  }
   const title = document.querySelector('#title');
   const message = document.querySelector('#message');
   const eyebrow = document.querySelector('#eyebrow');
@@ -64,10 +72,10 @@
     progress.style.transform = `scaleX(${Math.max(0, remaining / total)})`;
     if (remaining <= 0) {
       clearInterval(timer);
-      window.close();
+      closeReminder();
     }
   }, 1000);
 
-  done.addEventListener('click', () => window.close());
+  done.addEventListener('click', closeReminder);
   done.focus();
 })();

@@ -18,7 +18,7 @@ body {
   height: 100%;
   margin: 0;
   overflow: hidden;
-  background: var(--mint);
+  background: transparent;
 }
 
 body { color: var(--ink); }
@@ -28,9 +28,7 @@ body { color: var(--ink); }
   display: grid;
   place-items: center;
   padding: 14px;
-  background:
-    radial-gradient(circle at 2% 10%, rgba(255, 216, 115, .72), transparent 28%),
-    var(--mint);
+  background: transparent;
 }
 
 .banner {

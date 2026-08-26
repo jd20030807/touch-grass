@@ -1,6 +1,6 @@
 {
   "name": "touch-grass",
-  "version": "0.1.0+codex.20260826091141",
+  "version": "0.1.0+codex.20260826093953",
   "description": "Local cat-GIF popup reminders for long vibe-coding sessions.",
   "author": {
     "name": "Touch Grass contributors",
@@ -27,9 +27,9 @@
       "Conversational controls"
     ],
     "defaultPrompt": [
-      "What can I customize in Touch Grass?",
+      "Introduce Touch Grass and tell me how I can personalize it.",
       "Remind me to take a break every 45 minutes.",
-      "Test the nap reminder."
+      "Don't remind me about snacks anymore."
     ],
     "brandColor": "#78A968"
   }

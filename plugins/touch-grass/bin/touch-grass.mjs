@@ -227,7 +227,7 @@ async function doctor() {
     && !missingAssets.some((item) => bundledCompanions.some((companion) => companion.id === item.companion));
   const sample = reminders[0] ? await previewReminder(reminders[0].id) : null;
   const launch = sample ? resolveReminderCommand('file:///touch-grass-preview') : null;
-  const popupReady = launch?.mode === 'app-window';
+  const popupReady = launch?.mode === 'app-window' || (launch?.mode === 'native-helper' && launch.ready);
   print({
     ok: reminders.length > 0 && bundledCatPacksReady && popupReady,
     node: process.version,
@@ -243,24 +243,51 @@ async function doctor() {
   });
 }
 
+function introductionCopy() {
+  return `Touch Grass starts with six built-in break reminders:
+
+- Drink water
+- Stand up and stretch
+- Get a snack
+- Take a short walk around the room
+- Rest your eyes away from the screen
+- Take a nap or short rest
+
+By default, Touch Grass checks in about every 50 minutes while you’re actively using your coding agent. Quiet hours are off, so reminders can appear at any time until you ask for a quiet period. Each local popup banner stays visible for 18 seconds unless you dismiss it sooner. The suggestions vary instead of following a fixed order.
+
+You can customize Touch Grass by saying things like:
+
+- “Remind me to take a break every 40 minutes.”
+- “Don’t remind me about snacks anymore.”
+- “Keep nap reminders, but turn walks off.”
+- “Don’t interrupt me between 10 PM and 8 AM.”
+- “Snooze reminders for half an hour.”
+- “Use my cat Mochi for icon from \`/absolute/path/to/mochi\`.”
+
+Everything stays on your computer.`;
+}
+
+async function markOnboardingShown() {
+  await updateState((current) => ({ ...current, onboardingShown: true }));
+}
+
 async function showSettings() {
-  print(`You can shape Touch Grass just by talking to your agent. Try:
+  await markOnboardingShown();
+  print(introductionCopy());
+}
 
-“Remind me to take a break every 40 minutes.”
-“Don't remind me about snacks anymore.”
-“Keep nap reminders, but turn walks off.”
-“Don't interrupt me between 10 PM and 8 AM.”
-“Snooze reminders for half an hour.”
-“Show me a water reminder.”
-“Use my cat Mochi from /absolute/path/to/mochi.”
-
-Everything stays on this computer.`);
+async function showWelcome() {
+  const state = await loadState();
+  if (state.onboardingShown) return;
+  await markOnboardingShown();
+  print(introductionCopy());
 }
 
 function help() {
   print(`Touch Grass — local break reminders for agent sessions
 
 Usage:
+  touch-grass welcome
   touch-grass status [--json]
   touch-grass settings
   touch-grass test [reminder-id] [--dry-run]
@@ -296,6 +323,10 @@ async function main() {
     await showSettings();
     return;
   }
+  if (command === 'welcome') {
+    await showWelcome();
+    return;
+  }
   if (command === 'status') {
     const status = await statusSnapshot();
     if (flags.json) print(status);
@@ -311,7 +342,6 @@ async function main() {
       return;
     }
     launchReminder(payload);
-    print(`Here you go — ${reminderPhrase(payload.id)} are on the case.`);
     return;
   }
   if (command === 'config' && positionals[0] === 'get') {

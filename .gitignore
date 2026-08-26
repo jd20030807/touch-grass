@@ -3,3 +3,4 @@ node_modules/
 coverage/
 *.log
 .touch-grass/
+plugins/touch-grass/native/macos/dist/

@@ -1,5 +1,7 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { PLUGIN_ROOT } from './config.mjs';
@@ -30,15 +32,6 @@ function isCommandAvailable(command) {
 
 function browserCandidates(env = process.env) {
   const custom = env.TOUCH_GRASS_BROWSER ? [env.TOUCH_GRASS_BROWSER] : [];
-  if (process.platform === 'darwin') {
-    return [
-      ...custom,
-      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
-      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-      '/Applications/Chromium.app/Contents/MacOS/Chromium'
-    ];
-  }
   if (process.platform === 'win32') {
     return [
       ...custom,
@@ -52,18 +45,54 @@ function browserCandidates(env = process.env) {
   return [...custom, 'google-chrome', 'chromium', 'chromium-browser', 'brave-browser', 'microsoft-edge'];
 }
 
+export function nativeBridgeDirectory(env = process.env) {
+  if (env.TOUCH_GRASS_BRIDGE_DIR) return path.resolve(env.TOUCH_GRASS_BRIDGE_DIR);
+  const userId = typeof process.getuid === 'function' ? process.getuid() : (env.UID ?? 'user');
+  return path.join(os.tmpdir(), `touch-grass-${userId}`);
+}
+
+export function nativeHelperStatus(env = process.env, nowMs = Date.now()) {
+  const bridgePath = nativeBridgeDirectory(env);
+  const heartbeatPath = path.join(bridgePath, 'helper.json');
+  let ready = false;
+  try {
+    ready = nowMs - statSync(heartbeatPath).mtimeMs < 3_500;
+  } catch {
+    ready = false;
+  }
+  return { bridgePath, heartbeatPath, ready };
+}
+
 export function resolveReminderCommand(url, env = process.env) {
+  if (process.platform === 'darwin' || env.TOUCH_GRASS_NATIVE_HELPER === '1') {
+    const helper = nativeHelperStatus(env);
+    return {
+      executable: 'Touch Grass.app',
+      args: [],
+      mode: 'native-helper',
+      ...helper
+    };
+  }
   const browser = browserCandidates(env).find(isCommandAvailable);
   if (browser) {
+    const browserArgs = [
+      `--app=${url}`,
+      '--window-size=590,270',
+      '--window-position=32,54',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--disable-background-mode',
+      '--disable-background-networking',
+      '--disable-component-update',
+      '--disable-default-apps',
+      '--disable-extensions',
+      '--disable-session-crashed-bubble',
+      '--disable-sync',
+      '--metrics-recording-only'
+    ];
     return {
       executable: browser,
-      args: [
-        `--app=${url}`,
-        '--window-size=590,270',
-        '--window-position=32,54',
-        '--no-first-run',
-        '--disable-session-crashed-bubble'
-      ],
+      args: browserArgs,
       mode: 'app-window'
     };
   }
@@ -87,6 +116,18 @@ function launch(command, dryRun = false) {
 export function launchReminder(payload, options = {}) {
   const url = reminderUrl(payload);
   const command = resolveReminderCommand(url, options.env ?? process.env);
-  launch(command, options.dryRun ?? process.env.TOUCH_GRASS_DRY_RUN === '1');
+  const dryRun = options.dryRun ?? process.env.TOUCH_GRASS_DRY_RUN === '1';
+  if (command.mode === 'native-helper') {
+    if (!dryRun) {
+      if (!command.ready) {
+        throw new Error('The Touch Grass popup helper is not running. Open “Touch Grass.app” once, then try again.');
+      }
+      mkdirSync(command.bridgePath, { recursive: true, mode: 0o700 });
+      const requestPath = path.join(command.bridgePath, 'reminder.json');
+      const temporaryPath = `${requestPath}.${process.pid}.${randomUUID()}.tmp`;
+      writeFileSync(temporaryPath, `${JSON.stringify({ url, createdAt: new Date().toISOString() })}\n`, { mode: 0o600 });
+      renameSync(temporaryPath, requestPath);
+    }
+  } else launch(command, dryRun);
   return { url, ...command };
 }

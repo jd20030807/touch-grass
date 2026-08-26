@@ -18,7 +18,7 @@ There is no settings website. People customize it by talking to Codex or Claude 
 ## What works now
 
 - One local plugin package for Codex and Claude Code
-- A compact desktop popup banner launched by local agent hooks
+- A compact native macOS popup banner fed by local agent hooks
 - Six built-in reminder types: water, stretch, snack, walk, eyes, and nap
 - A matching animated cat asset required for every reminder
 - Conversational customization with no settings panel or technical settings dump
@@ -39,7 +39,14 @@ codex plugin marketplace add /absolute/path/to/touch-grass
 codex plugin add touch-grass@touch-grass
 ```
 
-Restart Codex, start a new task, and review the local Touch Grass hooks when prompted.
+Build and open the native popup companion once:
+
+```bash
+npm run build:macos-helper
+open "plugins/touch-grass/native/macos/dist/Touch Grass.app"
+```
+
+Keep the companion running, restart Codex, start a new task, and review the local Touch Grass hooks when prompted.
 
 ### Claude Code
 
@@ -51,17 +58,18 @@ claude --plugin-dir /absolute/path/to/touch-grass/plugins/touch-grass
 
 This does not install the plugin for future sessions. Run `/reload-plugins` after changing plugin or hook files.
 
+On macOS, build and open the same local popup companion before testing reminders.
+
 ### Try the experience
 
 Ask either agent:
 
 ```text
 What can I customize in Touch Grass?
-Show me a water reminder.
 Remind me to take a break every minute while I test this.
 ```
 
-The first two requests exercise the conversational skill and popup immediately. For automatic timing, keep using the agent for at least a minute and cause another prompt or tool event. Afterwards, say `Remind me about every 50 minutes again.`
+The first request displays the one-time introduction and customization examples. For automatic timing, keep using the agent for at least a minute and cause another prompt or tool event. Afterwards, say `Remind me about every 50 minutes again.`
 
 The current popup uses the deliberate art placeholder. It is not a substitute cat and will be replaced only after the real-cat art pass.
 
@@ -75,8 +83,7 @@ Don't remind me about snacks anymore.
 Keep nap reminders, but turn walks off.
 Don't interrupt me between 10 PM and 8 AM.
 Snooze reminders for half an hour.
-Show me a water reminder.
-Use my cat Mochi from /absolute/path/to/mochi.
+Use my cat Mochi for icon from /absolute/path/to/mochi.
 ```
 
 Touch Grass responds in the same style—for example, `Okay, I won't remind you about snacks anymore.` It does not expose internal field names or announce configuration mutations.
@@ -113,10 +120,12 @@ A reminder appears on the next agent event after a break becomes due, so it may 
 Codex hooks ──────┐
                   ├── local Node command ── local timing/preferences
 Claude hooks ─────┘             │
-                                └── local file banner + matching cat GIF
+                                └── private /tmp bridge
+                                           │
+                                           └── native popup + matching cat GIF
 ```
 
-The banner is bundled HTML/CSS/JavaScript opened in a small browser app window. It is a local `file://` renderer, not a site: no server starts and no network request is made. Chrome, Chromium, Brave, or Edge supplies the popup shell. Touch Grass refuses to degrade into a normal browser tab if none is available.
+On macOS, a tiny native companion owns the floating window outside the coding agent's GUI sandbox. The hook sends it a local `file://` reminder through a user-private temporary directory. There is no browser tab, server, or network request. Windows and Linux currently use a dedicated Chromium app window while native companions are developed for those platforms.
 
 See [PRIVACY.md](./PRIVACY.md) and [SECURITY.md](./SECURITY.md) for the exact boundaries.
 
@@ -135,6 +144,7 @@ Requires Node.js 18 or newer.
 ```bash
 npm test
 npm run check
+npm run build:macos-helper
 npm run doctor
 TOUCH_GRASS_HOME="$(mktemp -d)" node plugins/touch-grass/bin/touch-grass.mjs test nap --dry-run
 ```
@@ -155,7 +165,8 @@ touch-grass doctor
 
 - Create two complete six-action cat packs from the real model references
 - Add them to `assets/companions/manifest.json`
-- Confirm animated GIF/WebP playback in the popup on macOS, Windows, and Linux
+- Add native popup companions for Windows and Linux
+- Confirm animated GIF/WebP playback in every native popup
 - Run the automated tests and both host plugin validators
 - Review installation from a clean local Codex and Claude Code profile
 - Publish the repository and replace any owner URLs if needed

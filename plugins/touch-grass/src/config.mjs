@@ -27,6 +27,7 @@ const DEFAULT_CONFIG = Object.freeze({
 
 const DEFAULT_STATE = Object.freeze({
   schemaVersion: 1,
+  onboardingShown: false,
   lastActivityAt: null,
   activeMs: 0,
   lastReminderAt: null,
@@ -179,6 +180,7 @@ function normalizeState(input = {}) {
     ...defaultState(),
     ...input,
     schemaVersion: 1,
+    onboardingShown: input.onboardingShown === true,
     activeMs: Math.max(0, Number(input.activeMs) || 0),
     nextReminderIndex: Math.max(0, Number(input.nextReminderIndex) || 0),
     nextCompanionIndex: Math.max(0, Number(input.nextCompanionIndex) || 0),

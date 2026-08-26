@@ -9,3 +9,5 @@
 - Natural-language customization and acknowledgements with no settings panel
 - Chat-first configuration skill and custom companion import
 - Public-release check requiring two complete bundled cat packs
+- One-time first-use explanation and a guard against chat-only reminder simulation
+- Native macOS popup companion with a private local reminder bridge

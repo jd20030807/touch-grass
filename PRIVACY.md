@@ -8,4 +8,4 @@ The lifecycle hook keeps only local timing metadata, an event name, and a coarse
 - Windows: `%APPDATA%\\touch-grass`
 - Development override: `TOUCH_GRASS_HOME=/path/to/folder`
 
-There is no settings server or hosted control panel. A reminder opens a bundled `file://` page using bundled UI files and the selected local cat animation. Personal cat files never leave the computer.
+There is no settings server or hosted control panel. On macOS, the hook writes one local reminder request to a user-private directory under the system temporary folder. The native companion consumes that request and displays bundled UI files plus the selected local cat animation. Personal cat files never leave the computer.

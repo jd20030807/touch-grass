@@ -21,9 +21,29 @@ test('settings teaches conversational phrases without exposing internal fields',
   try {
     const result = run(['settings'], home);
     assert.equal(result.status, 0);
+    assert.match(result.stdout, /six built-in break reminders/);
+    assert.match(result.stdout, /every 50 minutes/);
+    assert.match(result.stdout, /Quiet hours are off/);
+    assert.match(result.stdout, /18 seconds/);
     assert.match(result.stdout, /Remind me to take a break every 40 minutes/);
-    assert.match(result.stdout, /Everything stays on this computer/);
+    assert.match(result.stdout, /Use my cat Mochi for icon/);
+    assert.match(result.stdout, /Everything stays on your computer/);
+    assert.doesNotMatch(result.stdout, /Show me a water reminder/);
     assert.doesNotMatch(result.stdout, /idle reset|activeMs|delivery|intervalMinutes/i);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('welcome explains Touch Grass once per local installation', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  try {
+    const first = run(['welcome'], home);
+    const second = run(['welcome'], home);
+    assert.equal(first.status, 0);
+    assert.match(first.stdout, /six built-in break reminders/);
+    assert.equal(second.status, 0);
+    assert.equal(second.stdout, '');
   } finally {
     await rm(home, { recursive: true, force: true });
   }
