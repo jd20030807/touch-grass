@@ -29,6 +29,7 @@ test('popup is constrained to a notification-sized banner', async () => {
 
 test('hook commands stay inside the installed plugin root', async () => {
   const hooks = JSON.parse(await readFile(path.join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
+  assert.ok(hooks.hooks.SessionEnd, 'SessionEnd must remove the local session lease');
   for (const groups of Object.values(hooks.hooks)) {
     for (const group of groups) {
       for (const hook of group.hooks) {
@@ -37,6 +38,17 @@ test('hook commands stay inside the installed plugin root', async () => {
       }
     }
   }
+});
+
+test('macOS presence sampling uses aggregate idle age without privileged event capture', async () => {
+  const [swift, plist] = await Promise.all([
+    readFile(path.join(pluginRoot, 'native', 'macos', 'TouchGrassPopup.swift'), 'utf8'),
+    readFile(path.join(pluginRoot, 'native', 'macos', 'Info.plist'), 'utf8')
+  ]);
+  assert.match(swift, /secondsSinceLastEventType/);
+  assert.match(swift, /frontmostApplication/);
+  assert.doesNotMatch(swift, /CGEvent\.tapCreate|NSEvent\.addGlobalMonitor/);
+  assert.doesNotMatch(plist, /Accessibility|InputMonitoring|ScreenCapture|ScreenRecording/i);
 });
 
 test('reminder payload is encoded into a local file URL', () => {

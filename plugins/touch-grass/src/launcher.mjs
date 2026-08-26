@@ -1,10 +1,12 @@
-import { existsSync, mkdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { PLUGIN_ROOT } from './config.mjs';
+import { nativeBridgeDirectory, nativeHelperStatus } from './bridge.mjs';
+
+export { nativeBridgeDirectory, nativeHelperStatus } from './bridge.mjs';
 
 function encodePayload(payload) {
   const browserPayload = {
@@ -43,24 +45,6 @@ function browserCandidates(env = process.env) {
     ];
   }
   return [...custom, 'google-chrome', 'chromium', 'chromium-browser', 'brave-browser', 'microsoft-edge'];
-}
-
-export function nativeBridgeDirectory(env = process.env) {
-  if (env.TOUCH_GRASS_BRIDGE_DIR) return path.resolve(env.TOUCH_GRASS_BRIDGE_DIR);
-  const userId = typeof process.getuid === 'function' ? process.getuid() : (env.UID ?? 'user');
-  return path.join(os.tmpdir(), `touch-grass-${userId}`);
-}
-
-export function nativeHelperStatus(env = process.env, nowMs = Date.now()) {
-  const bridgePath = nativeBridgeDirectory(env);
-  const heartbeatPath = path.join(bridgePath, 'helper.json');
-  let ready = false;
-  try {
-    ready = nowMs - statSync(heartbeatPath).mtimeMs < 3_500;
-  } catch {
-    ready = false;
-  }
-  return { bridgePath, heartbeatPath, ready };
 }
 
 export function resolveReminderCommand(url, env = process.env) {

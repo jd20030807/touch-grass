@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const CURRENT_ONBOARDING_VERSION = 2;
+export const CURRENT_ONBOARDING_VERSION = 3;
 const PRESETS_PATH = path.join(PLUGIN_ROOT, 'presets.json');
 
 export const DEFAULT_REMINDER_SCHEDULES = Object.freeze({
@@ -35,19 +35,17 @@ const DEFAULT_CONFIG = Object.freeze({
 });
 
 const DEFAULT_STATE = Object.freeze({
-  schemaVersion: 2,
+  schemaVersion: 3,
   onboardingShown: false,
   onboardingVersion: 0,
-  lastActivityAt: null,
   activeMsByReminder: {},
+  presenceCursor: null,
   deliveredOccurrences: [],
   lastReminderAt: null,
   lastReminderAtById: {},
   lastReminderId: null,
   nextCompanionIndex: 0,
   snoozedUntil: null,
-  lastEventName: null,
-  lastHost: null,
   reminderCount: 0
 });
 
@@ -262,6 +260,20 @@ function cleanStringMap(value) {
   );
 }
 
+function cleanPresenceCursor(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const helperInstanceId = typeof value.helperInstanceId === 'string' ? value.helperInstanceId : '';
+  const stretchId = typeof value.stretchId === 'string' ? value.stretchId : '';
+  const stretchEngagedMs = Number(value.stretchEngagedMs);
+  if (
+    !/^[a-zA-Z0-9-]{1,80}$/.test(helperInstanceId)
+    || !/^[a-zA-Z0-9-]{1,80}$/.test(stretchId)
+    || !Number.isFinite(stretchEngagedMs)
+    || stretchEngagedMs < 0
+  ) return null;
+  return { helperInstanceId, stretchId, stretchEngagedMs: Math.round(stretchEngagedMs) };
+}
+
 function normalizeState(input = {}) {
   const legacyActive = Math.max(0, Number(input.activeMs) || 0);
   const activeMsByReminder = Object.keys(input.activeMsByReminder ?? {}).length > 0
@@ -275,18 +287,20 @@ function normalizeState(input = {}) {
     ? Math.max(0, Number(input.onboardingVersion))
     : input.onboardingShown === true ? 1 : 0;
   return {
-    ...defaultState(),
-    ...input,
-    schemaVersion: 2,
+    schemaVersion: 3,
     onboardingShown: onboardingVersion >= CURRENT_ONBOARDING_VERSION,
     onboardingVersion,
     activeMsByReminder,
+    presenceCursor: cleanPresenceCursor(input.presenceCursor),
     deliveredOccurrences: [...new Set(
       (Array.isArray(input.deliveredOccurrences) ? input.deliveredOccurrences : [])
         .filter((value) => typeof value === 'string' && value.length <= 100)
     )].slice(-64),
+    lastReminderAt: typeof input.lastReminderAt === 'string' ? input.lastReminderAt : null,
     lastReminderAtById: cleanStringMap(input.lastReminderAtById),
+    lastReminderId: typeof input.lastReminderId === 'string' ? input.lastReminderId : null,
     nextCompanionIndex: Math.max(0, Number(input.nextCompanionIndex) || 0),
+    snoozedUntil: typeof input.snoozedUntil === 'string' ? input.snoozedUntil : null,
     reminderCount: Math.max(0, Number(input.reminderCount) || 0)
   };
 }

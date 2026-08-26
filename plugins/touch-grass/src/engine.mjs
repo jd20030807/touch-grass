@@ -9,6 +9,7 @@ import {
   saveState,
   withDataLock
 } from './config.mjs';
+import { publishAgentSession, readPresenceSnapshot } from './bridge.mjs';
 
 export function isQuietHours(quietHours, now = new Date()) {
   if (!quietHours?.enabled) return false;
@@ -24,8 +25,8 @@ export function isQuietHours(quietHours, now = new Date()) {
 }
 
 export function inferHost(input = {}, env = process.env) {
-  if (env.CODEX_THREAD_ID || input.model) return 'codex';
-  if (env.CLAUDECODE || env.CLAUDE_CODE_ENTRYPOINT) return 'claude-code';
+  if (env.CLAUDECODE || env.CLAUDE_CODE_ENTRYPOINT || env.CLAUDE_PLUGIN_ROOT) return 'claude-code';
+  if (env.CODEX_THREAD_ID) return 'codex';
   return 'agent';
 }
 
@@ -193,6 +194,29 @@ function updateActiveClocks(reminders, state, deltaMs, reset) {
   }
 }
 
+function applyPresenceProgress(reminders, state, presence) {
+  if (!presence) return { engaged: false, available: false, deltaMs: 0, reset: false };
+
+  const previous = state.presenceCursor;
+  const sameStretch = previous
+    && previous.helperInstanceId === presence.helperInstanceId
+    && previous.stretchId === presence.stretchId;
+  const counterMovedBackwards = sameStretch
+    && presence.stretchEngagedMs < previous.stretchEngagedMs;
+  const reset = !sameStretch || counterMovedBackwards;
+  const deltaMs = reset
+    ? presence.stretchEngagedMs
+    : Math.max(0, presence.stretchEngagedMs - previous.stretchEngagedMs);
+
+  updateActiveClocks(reminders, state, deltaMs, reset);
+  state.presenceCursor = {
+    helperInstanceId: presence.helperInstanceId,
+    stretchId: presence.stretchId,
+    stretchEngagedMs: presence.stretchEngagedMs
+  };
+  return { engaged: presence.engaged, available: true, deltaMs, reset };
+}
+
 function activeCandidates(reminders, state) {
   return reminders
     .filter((reminder) => reminder.schedule?.kind === 'active')
@@ -208,47 +232,60 @@ function activeCandidates(reminders, state) {
 export async function recordActivity(input = {}, options = {}) {
   const nowMs = options.nowMs ?? Date.now();
   const env = options.env ?? process.env;
+  const host = inferHost(input, env);
+  const eventName = String(input.hook_event_name ?? input.event ?? 'activity');
+
+  if (eventName.toLowerCase().replace('_', '') === 'sessionend') {
+    await publishAgentSession(input, { env, nowMs, host });
+    return { due: false, reason: 'session-ended' };
+  }
 
   return withDataLock(async () => {
     const config = await loadConfig(env);
     const state = await loadState(env);
-    const previous = state.lastActivityAt ? Date.parse(state.lastActivityAt) : null;
     const now = new Date(nowMs);
     const reminders = await availableReminders(config);
+    await publishAgentSession(input, {
+      env,
+      nowMs,
+      host,
+      awayResetMinutes: config.idleResetMinutes
+    });
+    const presence = await readPresenceSnapshot(env, nowMs);
+    const progress = applyPresenceProgress(reminders, state, presence);
 
     if (!config.enabled) {
-      state.lastActivityAt = now.toISOString();
       state.activeMsByReminder = {};
       await saveState(state, env);
       return { due: false, reason: 'disabled', config, state };
     }
 
-    let deltaMs = 0;
-    let reset = false;
-    if (previous !== null) {
-      const delta = Math.max(0, nowMs - previous);
-      reset = delta > config.idleResetMinutes * 60_000;
-      if (!reset) deltaMs = delta;
-    }
-    updateActiveClocks(reminders, state, deltaMs, reset);
-
-    state.lastActivityAt = now.toISOString();
-    state.lastEventName = String(input.hook_event_name ?? input.event ?? 'activity');
-    state.lastHost = inferHost(input, env);
-
     const snoozed = state.snoozedUntil && Date.parse(state.snoozedUntil) > nowMs;
     const quiet = isQuietHours(config.quietHours, now);
     const scheduled = scheduledCandidates(reminders, state, now);
     const active = activeCandidates(reminders, state);
-    const eligible = !snoozed && !quiet && reminders.length > 0 && (scheduled.length > 0 || active.length > 0);
+    const eligible = progress.engaged
+      && !snoozed
+      && !quiet
+      && reminders.length > 0
+      && (scheduled.length > 0 || active.length > 0);
 
     if (!eligible) {
       await saveState(state, env);
       return {
         due: false,
-        reason: snoozed ? 'snoozed' : quiet ? 'quiet-hours' : reminders.length === 0 ? 'no-reminders' : 'not-due',
+        reason: !progress.available
+          ? 'presence-unavailable'
+          : !progress.engaged
+            ? 'not-active'
+            : snoozed
+              ? 'snoozed'
+              : quiet
+                ? 'quiet-hours'
+                : reminders.length === 0 ? 'no-reminders' : 'not-due',
         config,
-        state
+        state,
+        presence
       };
     }
 
@@ -270,7 +307,7 @@ export async function recordActivity(input = {}, options = {}) {
     state.reminderCount += 1;
     await saveState(state, env);
 
-    return { due: true, payload, config, state };
+    return { due: true, payload, config, state, presence };
   }, env);
 }
 
@@ -304,9 +341,10 @@ export async function previewReminder(id, options = {}) {
   return toPayload(reminder, companion, config.reminderDurationSeconds, presentation);
 }
 
-export async function statusSnapshot(env = process.env) {
+export async function statusSnapshot(env = process.env, nowMs = Date.now()) {
   const config = await loadConfig(env);
   const state = await loadState(env);
+  const presence = await readPresenceSnapshot(env, nowMs);
   return {
     enabled: config.enabled,
     schedules: config.reminderSchedules,
@@ -317,6 +355,7 @@ export async function statusSnapshot(env = process.env) {
     lastReminderAt: state.lastReminderAt,
     lastReminderId: state.lastReminderId,
     reminderCount: state.reminderCount,
-    lastHost: state.lastHost
+    presenceAvailable: presence !== null,
+    currentlyEngaged: presence?.engaged === true
   };
 }

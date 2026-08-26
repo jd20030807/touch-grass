@@ -1,9 +1,23 @@
 import AppKit
+import CoreGraphics
 import Foundation
 import WebKit
 
 private struct ReminderRequest: Decodable {
     let url: String
+}
+
+private struct SessionLease: Decodable {
+    let schemaVersion: Int
+    let active: Bool
+    let host: String
+    let awayResetMinutes: Double
+    let updatedAt: String
+}
+
+private struct SessionContext {
+    var hosts: Set<String> = []
+    var awayResetMinutes: Double = 10
 }
 
 @MainActor
@@ -12,14 +26,39 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
     private var webView: WKWebView?
     private var pollTimer: Timer?
     private var heartbeatTimer: Timer?
+    private var presenceTimer: Timer?
+
+    private let helperInstanceId = UUID().uuidString
+    private var stretchId = UUID().uuidString
+    private var stretchEngagedMilliseconds: Double = 0
+    private var lastSampleUptime = ProcessInfo.processInfo.systemUptime
+    private var disengagedSince: Date?
+    private var startFreshStretchOnNextEngagement = false
+    private var currentAwayResetMinutes: Double = 10
+
+    private let recentInputSeconds: Double = 90
+    private let sessionLeaseSeconds: Double = 35 * 60
 
     private let queueDirectory: URL = {
-        FileManager.default.temporaryDirectory
+        if let override = ProcessInfo.processInfo.environment["TOUCH_GRASS_BRIDGE_DIR"], !override.isEmpty {
+            return URL(fileURLWithPath: override, isDirectory: true)
+        }
+        return FileManager.default.temporaryDirectory
             .appendingPathComponent("touch-grass-\(getuid())", isDirectory: true)
     }()
 
     private var requestURL: URL { queueDirectory.appendingPathComponent("reminder.json") }
     private var heartbeatURL: URL { queueDirectory.appendingPathComponent("helper.json") }
+    private var presenceURL: URL { queueDirectory.appendingPathComponent("presence.json") }
+    private var sessionsDirectory: URL { queueDirectory.appendingPathComponent("sessions", isDirectory: true) }
+
+    private let fractionalDateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private let dateFormatter = ISO8601DateFormatter()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         do {
@@ -32,7 +71,13 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
                 [.posixPermissions: 0o700],
                 ofItemAtPath: queueDirectory.path
             )
+            try FileManager.default.createDirectory(
+                at: sessionsDirectory,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
             writeHeartbeat()
+            samplePresence()
         } catch {
             presentStartupError(error.localizedDescription)
             return
@@ -52,11 +97,19 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
             userInfo: nil,
             repeats: true
         )
+        presenceTimer = Timer.scheduledTimer(
+            timeInterval: 5,
+            target: self,
+            selector: #selector(samplePresence),
+            userInfo: nil,
+            repeats: true
+        )
         checkForReminder()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         try? FileManager.default.removeItem(at: heartbeatURL)
+        try? FileManager.default.removeItem(at: presenceURL)
     }
 
     @objc private func writeHeartbeat() {
@@ -69,6 +122,114 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
         try? FileManager.default.setAttributes(
             [.posixPermissions: 0o600],
             ofItemAtPath: heartbeatURL.path
+        )
+    }
+
+    private func parseDate(_ value: String) -> Date? {
+        fractionalDateFormatter.date(from: value) ?? dateFormatter.date(from: value)
+    }
+
+    private func activeSessionContext(at now: Date) -> SessionContext {
+        var context = SessionContext(awayResetMinutes: currentAwayResetMinutes)
+        guard let leaseURLs = try? FileManager.default.contentsOfDirectory(
+            at: sessionsDirectory,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return context }
+
+        var resetValues: [Double] = []
+        for leaseURL in leaseURLs where leaseURL.pathExtension == "json" {
+            guard
+                let data = try? Data(contentsOf: leaseURL),
+                let lease = try? JSONDecoder().decode(SessionLease.self, from: data),
+                lease.schemaVersion == 1,
+                lease.active,
+                let updatedAt = parseDate(lease.updatedAt)
+            else { continue }
+
+            if now.timeIntervalSince(updatedAt) > sessionLeaseSeconds {
+                try? FileManager.default.removeItem(at: leaseURL)
+                continue
+            }
+            context.hosts.insert(lease.host.lowercased())
+            resetValues.append(min(180, max(1, lease.awayResetMinutes)))
+        }
+        if let requestedReset = resetValues.min() {
+            context.awayResetMinutes = requestedReset
+            currentAwayResetMinutes = requestedReset
+        }
+        return context
+    }
+
+    private func foregroundMatches(_ hosts: Set<String>) -> Bool {
+        guard !hosts.isEmpty, let application = NSWorkspace.shared.frontmostApplication else { return false }
+        let fingerprint = [application.localizedName, application.bundleIdentifier]
+            .compactMap { $0?.lowercased() }
+            .joined(separator: " ")
+
+        let isCodex = fingerprint.contains("codex")
+        let isClaudeCodeWindow = [
+            "terminal", "iterm", "warp", "visual studio code", "vscode",
+            "cursor", "wezterm", "alacritty", "ghostty", "zed"
+        ].contains { fingerprint.contains($0) }
+
+        if hosts.contains("codex") && isCodex { return true }
+        if hosts.contains("claude-code") && isClaudeCodeWindow { return true }
+        if hosts.contains("agent") && (isCodex || isClaudeCodeWindow) { return true }
+        return false
+    }
+
+    private func hasRecentInput() -> Bool {
+        guard let anyInputEvent = CGEventType(rawValue: UInt32.max) else { return false }
+        let idleSeconds = CGEventSource.secondsSinceLastEventType(
+            .combinedSessionState,
+            eventType: anyInputEvent
+        )
+        return idleSeconds.isFinite && idleSeconds >= 0 && idleSeconds <= recentInputSeconds
+    }
+
+    @objc private func samplePresence() {
+        let now = Date()
+        let uptime = ProcessInfo.processInfo.systemUptime
+        let elapsedSeconds = min(10, max(0, uptime - lastSampleUptime))
+        lastSampleUptime = uptime
+
+        let sessions = activeSessionContext(at: now)
+        let engaged = foregroundMatches(sessions.hosts) && hasRecentInput()
+
+        if engaged {
+            if let disengagedSince,
+               now.timeIntervalSince(disengagedSince) >= sessions.awayResetMinutes * 60 {
+                startFreshStretchOnNextEngagement = true
+            }
+            if startFreshStretchOnNextEngagement {
+                stretchId = UUID().uuidString
+                stretchEngagedMilliseconds = 0
+                startFreshStretchOnNextEngagement = false
+            }
+            disengagedSince = nil
+            stretchEngagedMilliseconds += elapsedSeconds * 1_000
+        } else {
+            if disengagedSince == nil { disengagedSince = now }
+            if let disengagedSince,
+               now.timeIntervalSince(disengagedSince) >= sessions.awayResetMinutes * 60 {
+                startFreshStretchOnNextEngagement = true
+            }
+        }
+
+        let snapshot: [String: Any] = [
+            "schemaVersion": 1,
+            "helperInstanceId": helperInstanceId,
+            "stretchId": stretchId,
+            "stretchEngagedMs": Int(stretchEngagedMilliseconds.rounded()),
+            "sampledAt": dateFormatter.string(from: now),
+            "engaged": engaged
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: snapshot) else { return }
+        try? data.write(to: presenceURL, options: .atomic)
+        try? FileManager.default.setAttributes(
+            [.posixPermissions: 0o600],
+            ofItemAtPath: presenceURL.path
         )
     }
 

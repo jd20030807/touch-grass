@@ -44,6 +44,8 @@ Do not say “setting X changed to Y,” dump command output, or enumerate backe
 
 Touch Grass is local-only. Do not add network access, upload activity data, or read transcripts to configure it.
 
+When the user asks how activity detection works, explain it in plain language: agent hooks only keep an opaque local session lease alive; the macOS companion counts time when a recognized coding app is frontmost and the operating system reports recent input. It queries only how long the computer has been idle. It does not install a keylogger or mouse listener, and it never records keys, clicks, pointer coordinates, window titles, prompts, code, tool inputs, or tool outputs. Agent-only work does not keep the timer moving after recent user input expires. A longer absence begins a fresh coding stretch.
+
 Reminders always open as compact local popup banners. The banner may show an explicit art placeholder during development, but a public release is not ready until two complete bundled cat-GIF packs pass `touch-grass doctor`.
 
 Never simulate a reminder in chat. Do not use plain text, emoji, Markdown images, or wording such as “the reminder is showing now” as a substitute for the popup. If the user explicitly asks for a development preview, run `touch-grass test <id>` and only claim it opened after the command exits successfully. The popup itself is the reminder; do not repeat its reminder text in chat. Do not offer previewing as a customization example.

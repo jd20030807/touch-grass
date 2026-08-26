@@ -1,6 +1,6 @@
 # Import Touch Grass
 
-Touch Grass is both a Codex marketplace and a Claude Code marketplace. It runs local lifecycle hooks and opens a local cat-GIF reminder banner. Replace `jd20030807/touch-grass` only when installing a fork.
+Touch Grass is both a Codex marketplace and a Claude Code marketplace. Local lifecycle hooks maintain opaque session leases; a local companion counts presence time and opens cat-GIF reminder banners. Replace `jd20030807/touch-grass` only when installing a fork.
 
 ## Codex
 

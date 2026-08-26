@@ -8,7 +8,7 @@ Codex + Claude Code · local-only · cat GIFs required
 
 </div>
 
-Touch Grass notices sustained agent activity, then opens a notification-sized local banner with a cat doing the suggested break: drinking water, stretching, snacking, walking, resting its eyes, or getting ready for bed.
+Touch Grass notices sustained, user-present coding time, then opens a notification-sized local banner with a cat doing the suggested break: drinking water, stretching, snacking, walking, resting its eyes, or getting ready for bed.
 
 There is no settings website. People customize it by talking to Codex or Claude Code, and the agent answers in ordinary language. The plugin, preferences, timing data, banner, and cat files all stay on the computer.
 
@@ -18,7 +18,7 @@ There is no settings website. People customize it by talking to Codex or Claude 
 ## What works now
 
 - One local plugin package for Codex and Claude Code
-- A compact native macOS popup banner fed by local agent hooks
+- A compact native macOS popup banner fed by a local, privacy-minimal presence counter
 - Six built-in reminder groups: water, stretch, snack, walk, eyes, and two-stage bedtime
 - Independent schedules for every reminder instead of one random rotation
 - A matching animated cat asset required for every reminder
@@ -70,7 +70,7 @@ What can I customize in Touch Grass?
 Remind me to walk around every minute while I test this.
 ```
 
-The first request displays the one-time introduction and customization examples. For automatic timing, keep using the agent for at least a minute and cause another prompt or tool event. Afterwards, say `Remind me to walk around every two hours again.`
+The first request displays the one-time introduction and customization examples. For automatic timing, keep the coding app in front and continue using your keyboard or mouse for at least a minute. A due reminder is delivered on the next agent event. Afterwards, say `Remind me to walk around every two hours again.`
 
 The current popup uses the deliberate art placeholder. It is not a substitute cat and will be replaced only after the real-cat art pass.
 
@@ -113,20 +113,20 @@ Rotate through my cats.
 
 ## How it stays local
 
-The plugin receives lifecycle events from the active coding agent and stores only enough local timing state to recognize a continuing coding stretch. It does not inspect screen activity, keystrokes, prompts, transcripts, source code, tool arguments, or tool results.
+Agent lifecycle hooks only maintain an opaque, expiring local session lease. The macOS companion counts time when that host's coding app is in front and macOS reports that the keyboard or mouse was used recently. It asks the operating system only for elapsed idle time; it does not install event taps, capture screen contents, or record keys, clicks, pointer coordinates, window titles, prompts, transcripts, source code, tool arguments, or tool results.
 
-A reminder appears on the next agent event after it becomes due, so it may not appear at the exact second. Eye, water, stretch, and walk reminders keep separate active-coding clocks; a meaningful pause starts each of those clocks fresh. Snack and bedtime reminders use local clock time and only appear while the coding agent is active near the scheduled moment.
+A reminder appears on the next agent event after it becomes due, so it may not appear at the exact second. Agent-only work stops extending the timers once recent user input expires. Eye, water, stretch, and walk reminders keep separate engaged-coding clocks; a meaningful pause starts each of those clocks fresh. Snack and bedtime reminders use local clock time and only appear while the user is present in the coding app near the scheduled moment.
 
 ```text
 Codex hooks ──────┐
-                  ├── local Node command ── local timing/preferences
-Claude hooks ─────┘             │
-                                └── private /tmp bridge
-                                           │
-                                           └── native popup + matching cat GIF
+                  ├── opaque local session leases ──┐
+Claude hooks ─────┘                                 │
+                                                   ├── aggregate engaged time
+foreground coding app + recent input age ──────────┘            │
+                                                                 └── native popup + matching cat GIF
 ```
 
-On macOS, a tiny native companion owns the floating window outside the coding agent's GUI sandbox. The hook sends it a local `file://` reminder through a user-private temporary directory. There is no browser tab, server, or network request. Windows and Linux currently use a dedicated Chromium app window while native companions are developed for those platforms.
+On macOS, a tiny native companion owns the presence counter and floating window outside the coding agent's GUI sandbox. The hook sends it a local `file://` reminder through a user-private temporary directory. There is no browser tab, server, network request, global input listener, or special activity-monitoring permission. Windows and Linux currently use a dedicated Chromium app window for manual previews; automatic presence-aware timing awaits native companions for those platforms.
 
 See [PRIVACY.md](./PRIVACY.md) and [SECURITY.md](./SECURITY.md) for the exact boundaries.
 

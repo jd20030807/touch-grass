@@ -28,6 +28,8 @@ test('settings teaches conversational phrases without exposing internal fields',
     assert.match(result.stdout, /Get a snack — at 10:30 AM and 3:30 PM/);
     assert.match(result.stdout, /Bedtime — wind down at 9:40 PM/);
     assert.match(result.stdout, /starts with no quiet hours/);
+    assert.match(result.stdout, /coding app is in front and your computer has been used recently/);
+    assert.match(result.stdout, /never records what you type/);
     assert.match(result.stdout, /Remind me to walk around every 40 minutes/);
     assert.match(result.stdout, /Use my cat Mochi from/);
     assert.match(result.stdout, /Add a breathing reminder with this GIF/);

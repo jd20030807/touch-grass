@@ -21,10 +21,11 @@ Touch Grass is configured through ordinary conversation with the coding agent, b
 ## Operating Context
 
 - Installed as one local plugin for Codex and Claude Code.
-- Agent lifecycle hooks provide coarse activity events; Touch Grass does not inspect prompts, transcripts, source code, keystrokes, tool arguments, or tool results.
+- Agent lifecycle hooks maintain opaque, expiring session leases; they do not provide elapsed activity time.
+- The macOS companion counts only while a recognized coding app is frontmost and the operating system reports recent input. It uses aggregate idle age without recording keys, clicks, pointer locations, window titles, prompts, transcripts, source code, tool arguments, or tool results.
 - A local desktop companion owns the floating reminder window outside coding-agent GUI sandboxes.
-- Activity-based reminders count only a continuing coding stretch and start fresh after the user has been away for a while.
-- Clock-based snack and bedtime reminders appear only when the coding agent is active near their scheduled time.
+- Activity-based reminders consume cumulative local presence time and start fresh after the user has been away for a while; agent-only tool execution does not keep them moving.
+- Clock-based snack and bedtime reminders appear only when the user is present in the coding app near their scheduled time.
 
 ## Capabilities and Constraints
 

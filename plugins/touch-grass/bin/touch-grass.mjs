@@ -14,6 +14,7 @@ import {
   updateState
 } from '../src/config.mjs';
 import { availableCompanions, availableReminders, previewReminder, recordActivity, statusSnapshot } from '../src/engine.mjs';
+import { readPresenceSnapshot } from '../src/bridge.mjs';
 import { launchReminder, resolveReminderCommand } from '../src/launcher.mjs';
 
 function parseArgs(tokens) {
@@ -319,7 +320,7 @@ function introductionCopy() {
 - Rest your eyes — every 20 minutes, look about 20 feet away for 20 seconds
 - Bedtime — wind down at 9:40 PM, then a bedtime reminder at 10 PM
 
-When you step away from Codex or Claude Code for a while, the activity-based reminders start counting fresh when you return. Touch Grass starts with no quiet hours.
+Activity-based reminders count only while your coding app is in front and your computer has been used recently. Touch Grass checks elapsed idle time, but never records what you type, which keys you press, where you click, or your window titles. When you step away for a while, those reminders start counting fresh when you return. Touch Grass starts with no quiet hours.
 
 Everything stays on your computer.
 
@@ -406,7 +407,9 @@ async function main() {
     const status = await statusSnapshot();
     if (flags.json) print(status);
     else print(status.enabled
-      ? 'Touch Grass is on and watching this coding stretch. I’ll pop in when it’s time for a break.'
+      ? status.currentlyEngaged
+        ? 'Touch Grass is on and counting this coding stretch. I’ll pop in when it’s time for a break.'
+        : 'Touch Grass is on. Break timers will count while your coding app is in front and your computer is in use.'
       : 'Touch Grass is off.');
     return;
   }
@@ -493,10 +496,15 @@ async function main() {
     return;
   }
   if (command === 'reset-activity') {
+    const presence = await readPresenceSnapshot();
     const state = await updateState((current) => ({
       ...current,
       activeMsByReminder: {},
-      lastActivityAt: new Date().toISOString()
+      presenceCursor: presence ? {
+        helperInstanceId: presence.helperInstanceId,
+        stretchId: presence.stretchId,
+        stretchEngagedMs: presence.stretchEngagedMs
+      } : null
     }));
     print({ activeMinutesByReminder: state.activeMsByReminder });
     return;

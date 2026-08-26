@@ -16,6 +16,7 @@ swiftc \
   -parse-as-library \
   -module-cache-path "$cache_dir" \
   -framework AppKit \
+  -framework CoreGraphics \
   -framework WebKit \
   "$source_dir/TouchGrassPopup.swift" \
   -o "$binary_dir/TouchGrassPopup"
