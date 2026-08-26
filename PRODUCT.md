@@ -20,9 +20,10 @@ Touch Grass is configured through ordinary conversation with the coding agent, b
 
 ## Operating Context
 
-- Installed as one local plugin for Codex and Claude Code.
+- Installed as one local plugin for Codex and Claude Code Desktop, CLI, and supported IDE hosts.
 - Agent lifecycle hooks maintain opaque, expiring session leases; they do not provide elapsed activity time.
-- The macOS companion counts only while a recognized coding app is frontmost and the operating system reports recent input. It uses aggregate idle age without recording keys, clicks, pointer locations, window titles, prompts, transcripts, source code, tool arguments, or tool results.
+- The macOS companion counts only while the matching host is frontmost and the operating system reports recent input. Codex Desktop and Claude Desktop use exact bundle identifiers; terminals and editors are compatibility hosts for Claude Code CLI/IDE sessions. It uses aggregate idle age without recording keys, clicks, pointer locations, window titles, prompts, transcripts, source code, tool arguments, or tool results.
+- Claude Desktop's Chat, Cowork, and Code tabs share one application identity. A live Code lease gates counting, but Touch Grass does not inspect the selected internal tab.
 - A local desktop companion owns the floating reminder window outside coding-agent GUI sandboxes.
 - Activity-based reminders consume cumulative local presence time and start fresh after the user has been away for a while; agent-only tool execution does not keep them moving.
 - Clock-based snack and bedtime reminders appear only when the user is present in the coding app near their scheduled time.

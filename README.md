@@ -17,7 +17,7 @@ There is no settings website. People customize it by talking to Codex or Claude 
 
 ## What works now
 
-- One local plugin package for Codex and Claude Code
+- One local plugin package for Codex and Claude Code Desktop, CLI, and supported IDE hosts
 - A compact native macOS popup banner fed by a local, privacy-minimal presence counter
 - Six built-in reminder groups: water, stretch, snack, walk, eyes, and two-stage bedtime
 - Independent schedules for every reminder instead of one random rotation
@@ -51,7 +51,7 @@ Keep the companion running, restart Codex, start a new task, and review the loca
 
 ### Claude Code
 
-Launch one temporary session directly from the checkout:
+For a temporary CLI session, launch directly from the checkout:
 
 ```bash
 claude --plugin-dir /absolute/path/to/touch-grass/plugins/touch-grass
@@ -59,7 +59,7 @@ claude --plugin-dir /absolute/path/to/touch-grass/plugins/touch-grass
 
 This does not install the plugin for future sessions. Run `/reload-plugins` after changing plugin or hook files.
 
-On macOS, build and open the same local popup companion before testing reminders.
+For Claude Code Desktop, install this checkout as a local marketplace/plugin, then use the Code tab for a new session. Claude Desktop and the CLI share Claude Code plugin settings and hooks. On macOS, build and open the same local popup companion before testing reminders.
 
 ### Try the experience
 
@@ -113,7 +113,7 @@ Rotate through my cats.
 
 ## How it stays local
 
-Agent lifecycle hooks only maintain an opaque, expiring local session lease. The macOS companion counts time when that host's coding app is in front and macOS reports that the keyboard or mouse was used recently. It asks the operating system only for elapsed idle time; it does not install event taps, capture screen contents, or record keys, clicks, pointer coordinates, window titles, prompts, transcripts, source code, tool arguments, or tool results.
+Agent lifecycle hooks only maintain an opaque, expiring local session lease. The macOS companion counts time when that host's coding app is in front and macOS reports that the keyboard or mouse was used recently. Codex and Claude Desktop are matched by their exact bundle identifiers; Terminal, iTerm, Warp, VS Code, Cursor, and similar hosts remain compatibility paths for Claude Code CLI/IDE sessions. Touch Grass asks the operating system only for elapsed idle time; it does not install event taps, capture screen contents, or record keys, clicks, pointer coordinates, window titles, prompts, transcripts, source code, tool arguments, or tool results.
 
 A reminder appears on the next agent event after it becomes due, so it may not appear at the exact second. Agent-only work stops extending the timers once recent user input expires. Eye, water, stretch, and walk reminders keep separate engaged-coding clocks; a meaningful pause starts each of those clocks fresh. Snack and bedtime reminders use local clock time and only appear while the user is present in the coding app near the scheduled moment.
 
@@ -127,6 +127,8 @@ foreground coding app + recent input age ──────────┘      
 ```
 
 On macOS, a tiny native companion owns the presence counter and floating window outside the coding agent's GUI sandbox. The hook sends it a local `file://` reminder through a user-private temporary directory. There is no browser tab, server, network request, global input listener, or special activity-monitoring permission. Windows and Linux currently use a dedicated Chromium app window for manual previews; automatic presence-aware timing awaits native companions for those platforms.
+
+Claude Desktop contains Chat, Cowork, and Code in one application. Touch Grass requires a live Claude Code lease before Claude Desktop can count, but deliberately does not inspect which internal tab is selected. A still-live Code session plus activity elsewhere in Claude Desktop can therefore count until the lease ends or expires. This small overcount avoids reading Claude's UI or window contents.
 
 See [PRIVACY.md](./PRIVACY.md) and [SECURITY.md](./SECURITY.md) for the exact boundaries.
 

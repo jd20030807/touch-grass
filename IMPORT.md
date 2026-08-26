@@ -22,7 +22,7 @@ claude plugin marketplace add jd20030807/touch-grass
 claude plugin install touch-grass@touch-grass --scope user
 ```
 
-Start a fresh session or run `/reload-plugins`, review the local hooks when prompted, then ask: `Introduce Touch Grass and tell me how I can personalize it.`
+Start a fresh CLI session, or open Claude Desktop's Code tab for a new session. Run `/reload-plugins` when appropriate, review the local hooks when prompted, then ask: `Introduce Touch Grass and tell me how I can personalize it.`
 
 On macOS, build and open the native companion as described above before expecting reminder windows.
 

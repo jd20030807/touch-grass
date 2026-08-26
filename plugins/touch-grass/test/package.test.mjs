@@ -47,6 +47,9 @@ test('macOS presence sampling uses aggregate idle age without privileged event c
   ]);
   assert.match(swift, /secondsSinceLastEventType/);
   assert.match(swift, /frontmostApplication/);
+  assert.match(swift, /com\.openai\.codex/);
+  assert.match(swift, /com\.anthropic\.claudefordesktop/);
+  assert.match(swift, /isClaudeDesktop \|\| isClaudeCodeCLIHost/);
   assert.doesNotMatch(swift, /CGEvent\.tapCreate|NSEvent\.addGlobalMonitor/);
   assert.doesNotMatch(plist, /Accessibility|InputMonitoring|ScreenCapture|ScreenRecording/i);
 });

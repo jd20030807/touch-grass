@@ -21,6 +21,41 @@ private struct SessionContext {
 }
 
 @MainActor
+private enum PresenceDetector {
+    private static let codexBundleIdentifier = "com.openai.codex"
+    private static let claudeDesktopBundleIdentifier = "com.anthropic.claudefordesktop"
+    private static let recentInputSeconds: Double = 90
+
+    static func foregroundMatches(_ hosts: Set<String>) -> Bool {
+        guard !hosts.isEmpty, let application = NSWorkspace.shared.frontmostApplication else { return false }
+        let bundleIdentifier = application.bundleIdentifier?.lowercased() ?? ""
+        let applicationName = application.localizedName?.lowercased() ?? ""
+        let fingerprint = "\(applicationName) \(bundleIdentifier)"
+
+        let isCodexDesktop = bundleIdentifier == codexBundleIdentifier
+        let isClaudeDesktop = bundleIdentifier == claudeDesktopBundleIdentifier
+        let isClaudeCodeCLIHost = [
+            "com.apple.terminal", "com.googlecode.iterm2", "warp", "visual studio code",
+            "vscode", "cursor", "wezterm", "alacritty", "ghostty", "zed"
+        ].contains { fingerprint.contains($0) }
+
+        if hosts.contains("codex") && isCodexDesktop { return true }
+        if hosts.contains("claude-code") && (isClaudeDesktop || isClaudeCodeCLIHost) { return true }
+        if hosts.contains("agent") && (isCodexDesktop || isClaudeDesktop || isClaudeCodeCLIHost) { return true }
+        return false
+    }
+
+    static func hasRecentInput() -> Bool {
+        guard let anyInputEvent = CGEventType(rawValue: UInt32.max) else { return false }
+        let idleSeconds = CGEventSource.secondsSinceLastEventType(
+            .combinedSessionState,
+            eventType: anyInputEvent
+        )
+        return idleSeconds.isFinite && idleSeconds >= 0 && idleSeconds <= recentInputSeconds
+    }
+}
+
+@MainActor
 final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
     private var panel: NSPanel?
     private var webView: WKWebView?
@@ -36,7 +71,6 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
     private var startFreshStretchOnNextEngagement = false
     private var currentAwayResetMinutes: Double = 10
 
-    private let recentInputSeconds: Double = 90
     private let sessionLeaseSeconds: Double = 35 * 60
 
     private let queueDirectory: URL = {
@@ -162,30 +196,11 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
     }
 
     private func foregroundMatches(_ hosts: Set<String>) -> Bool {
-        guard !hosts.isEmpty, let application = NSWorkspace.shared.frontmostApplication else { return false }
-        let fingerprint = [application.localizedName, application.bundleIdentifier]
-            .compactMap { $0?.lowercased() }
-            .joined(separator: " ")
-
-        let isCodex = fingerprint.contains("codex")
-        let isClaudeCodeWindow = [
-            "terminal", "iterm", "warp", "visual studio code", "vscode",
-            "cursor", "wezterm", "alacritty", "ghostty", "zed"
-        ].contains { fingerprint.contains($0) }
-
-        if hosts.contains("codex") && isCodex { return true }
-        if hosts.contains("claude-code") && isClaudeCodeWindow { return true }
-        if hosts.contains("agent") && (isCodex || isClaudeCodeWindow) { return true }
-        return false
+        PresenceDetector.foregroundMatches(hosts)
     }
 
     private func hasRecentInput() -> Bool {
-        guard let anyInputEvent = CGEventType(rawValue: UInt32.max) else { return false }
-        let idleSeconds = CGEventSource.secondsSinceLastEventType(
-            .combinedSessionState,
-            eventType: anyInputEvent
-        )
-        return idleSeconds.isFinite && idleSeconds >= 0 && idleSeconds <= recentInputSeconds
+        PresenceDetector.hasRecentInput()
     }
 
     @objc private func samplePresence() {
