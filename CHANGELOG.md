@@ -13,3 +13,4 @@
 - One-time first-use explanation and a guard against chat-only reminder simulation
 - Native macOS popup companion with a private local reminder bridge
 - Complete transparent six-action GIF packs for the real cats Nian and You
+- Smoother eight-frame loops, with natural circle turns replacing the original walk cycles

@@ -73,7 +73,7 @@ test('Nian and You ship as complete transparent animated companion packs', async
       const source = await readFile(assetPath);
       const gif = inspectGif(source);
       assert.deepEqual([gif.width, gif.height], [256, 256]);
-      assert.equal(gif.frames, 6, `${companion.id}/${action} must contain six loop frames`);
+      assert.equal(gif.frames, 8, `${companion.id}/${action} must contain eight loop frames`);
       assert.equal(gif.transparent, true, `${companion.id}/${action} must preserve transparency`);
       assert.ok(source.length < 2_000_000, `${companion.id}/${action} must stay under 2 MB`);
     }

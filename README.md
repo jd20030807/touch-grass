@@ -8,12 +8,12 @@ Codex + Claude Code · local-only · cat GIFs required
 
 </div>
 
-Touch Grass notices sustained, user-present coding time, then opens a notification-sized local banner with a cat doing the suggested break: drinking water, stretching, snacking, walking, resting its eyes, or getting ready for bed.
+Touch Grass notices sustained, user-present coding time, then opens a notification-sized local banner with a cat doing the suggested break: drinking water, stretching, snacking, turning in a circle as the walk cue, resting its eyes, or getting ready for bed.
 
 There is no settings website. People customize it by talking to Codex or Claude Code, and the agent answers in ordinary language. The plugin, preferences, timing data, banner, and cat files all stay on the computer.
 
 > [!IMPORTANT]
-> Touch Grass now includes two complete animated companions based on the project's real-life model cats: Nian and You. Each has matching water, stretch, snack, walk, eye-rest, and bedtime GIFs, and the default `rotate` mode alternates between them.
+> Touch Grass now includes two complete animated companions based on the project's real-life model cats: Nian and You. Each has matching eight-frame water, stretch, snack, walk-cue, eye-rest, and bedtime GIFs, and the default `rotate` mode alternates between them.
 
 ## What works now
 

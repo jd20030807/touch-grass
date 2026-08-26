@@ -161,17 +161,25 @@ private func removeSmallComponents(from frame: inout RasterFrame) {
     }
 }
 
-private func splitAndKey(_ sheet: RasterFrame) -> [RasterFrame] {
-    let leftWidth = sheet.width / 2
-    let bottomHeight = sheet.height / 2
-    let topHeight = sheet.height - bottomHeight
-    let columns = [(0, leftWidth), (leftWidth, sheet.width - leftWidth)]
+private func splitAndKey(_ sheet: RasterFrame, columnCount: Int, rowCount: Int) -> [RasterFrame] {
+    let columns = (0..<columnCount).map { column in
+        let x = sheet.width * column / columnCount
+        let nextX = sheet.width * (column + 1) / columnCount
+        return (x, nextX - x)
+    }
     // Core Graphics exposes decoded pixel rows bottom-up. Read the visual top row first.
-    let rows = [(bottomHeight, topHeight), (0, bottomHeight)]
+    let rows = (0..<rowCount).map { visualRow in
+        let y = sheet.height * (rowCount - visualRow - 1) / rowCount
+        let nextY = sheet.height * (rowCount - visualRow) / rowCount
+        return (y, nextY - y)
+    }
 
     return rows.flatMap { y, height in
         columns.map { x, width in
             let inset = 12
+            guard width > inset * 2, height > inset * 2 else {
+                return RasterFrame(width: 1, height: 1, pixels: [0, 0, 0, 0])
+            }
             var frame = sheet.cropped(to: CGRect(
                 x: x + inset,
                 y: y + inset,
@@ -270,9 +278,18 @@ private func renderAligned(_ frames: [RasterFrame], size: Int = 256, margin: Int
     }
 }
 
-private func writeGIF(_ frames: [CGImage], to url: URL, delay: Double) throws {
-    let sequence = [0, 1, 2, 3, 2, 1]
-    guard frames.count == 4,
+private func writeGIF(_ frames: [CGImage], to url: URL, delay: Double, mode: String) throws {
+    let sequence: [Int]
+    switch mode {
+    case "forward":
+        sequence = Array(frames.indices)
+    case "pingpong":
+        sequence = Array(frames.indices)
+            + Array(frames.indices.dropFirst().dropLast().reversed())
+    default:
+        throw BuildError("Loop mode must be 'forward' or 'pingpong'.")
+    }
+    guard !frames.isEmpty,
           let destination = CGImageDestinationCreateWithURL(
             url as CFURL,
             UTType.gif.identifier as CFString,
@@ -303,22 +320,31 @@ private func writeGIF(_ frames: [CGImage], to url: URL, delay: Double) throws {
 
 private func main() throws {
     let arguments = Array(CommandLine.arguments.dropFirst())
-    guard arguments.count == 2 || arguments.count == 3 else {
-        throw BuildError("Usage: build-companion-gif.swift INPUT_SHEET OUTPUT_GIF [FRAME_DELAY_SECONDS]")
+    guard (2...6).contains(arguments.count) else {
+        throw BuildError(
+            "Usage: build-companion-gif.swift INPUT_SHEET OUTPUT_GIF "
+                + "[FRAME_DELAY_SECONDS] [COLUMNS] [ROWS] [forward|pingpong]"
+        )
     }
 
     let inputURL = URL(fileURLWithPath: arguments[0])
     let outputURL = URL(fileURLWithPath: arguments[1])
-    let delay = arguments.count == 3 ? Double(arguments[2]) ?? 0.2 : 0.2
+    let delay = arguments.count >= 3 ? Double(arguments[2]) ?? 0.2 : 0.2
+    let columnCount = arguments.count >= 4 ? Int(arguments[3]) ?? 2 : 2
+    let rowCount = arguments.count >= 5 ? Int(arguments[4]) ?? 2 : 2
+    let mode = arguments.count >= 6 ? arguments[5] : "pingpong"
+    guard delay > 0, columnCount > 0, rowCount > 0 else {
+        throw BuildError("Frame delay, columns, and rows must be positive.")
+    }
     try FileManager.default.createDirectory(
         at: outputURL.deletingLastPathComponent(),
         withIntermediateDirectories: true
     )
 
     let sheet = try decode(inputURL)
-    let keyedFrames = splitAndKey(sheet)
+    let keyedFrames = splitAndKey(sheet, columnCount: columnCount, rowCount: rowCount)
     let renderedFrames = try renderAligned(keyedFrames)
-    try writeGIF(renderedFrames, to: outputURL, delay: delay)
+    try writeGIF(renderedFrames, to: outputURL, delay: delay, mode: mode)
     print(outputURL.path)
 }
 
