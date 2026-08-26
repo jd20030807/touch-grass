@@ -12,7 +12,7 @@ test('both host manifests identify the same plugin version', async () => {
   const claude = JSON.parse(await readFile(path.join(pluginRoot, '.claude-plugin', 'plugin.json'), 'utf8'));
   assert.equal(codex.name, 'touch-grass');
   assert.equal(claude.name, codex.name);
-  assert.equal(claude.version, codex.version);
+  assert.equal(claude.version, codex.version.split('+')[0]);
 });
 
 test('hook commands stay inside the installed plugin root', async () => {
@@ -34,8 +34,13 @@ test('reminder payload is encoded into a local file URL', () => {
   assert.ok(new URL(url).searchParams.get('data'));
 });
 
-test('launcher has a deterministic fallback command', () => {
+test('launcher never degrades a required popup into a browser tab', () => {
   const command = resolveReminderCommand('file:///preview', { TOUCH_GRASS_BROWSER: '/path/that/does/not/exist' });
-  assert.ok(command.executable);
-  assert.ok(command.args.some((argument) => argument.includes('file:///preview')));
+  if (command.mode === 'unavailable') {
+    assert.equal(command.executable, null);
+    assert.deepEqual(command.args, []);
+  } else {
+    assert.equal(command.mode, 'app-window');
+    assert.ok(command.args.some((argument) => argument.includes('file:///preview')));
+  }
 });

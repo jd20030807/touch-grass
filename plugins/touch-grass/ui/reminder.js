@@ -25,12 +25,14 @@
   const pet = document.querySelector('#pet');
   const icon = document.querySelector('#icon');
   const iconText = document.querySelector('#icon-text');
+  const placeholder = document.querySelector('#placeholder');
   const countdown = document.querySelector('#countdown');
   const done = document.querySelector('#done');
+  const progress = document.querySelector('#progress');
 
   title.textContent = payload.title;
   message.textContent = payload.message;
-  eyebrow.textContent = payload.companionName ? `${payload.companionName} demonstrates` : 'A small reset';
+  eyebrow.textContent = payload.companionName ? `${payload.companionName} has a suggestion` : 'Your cat has a suggestion';
   document.title = `Touch Grass — ${payload.title}`;
 
   if (payload.assetUrl) {
@@ -41,23 +43,25 @@
       pet.hidden = true;
       if (payload.iconUrl) {
         icon.src = payload.iconUrl;
-        icon.hidden = false;
+        placeholder.hidden = false;
       }
     });
   } else if (payload.iconUrl) {
     icon.src = payload.iconUrl;
     icon.alt = `${payload.id} reminder icon`;
-    icon.hidden = false;
+    placeholder.hidden = false;
   } else {
     iconText.textContent = payload.iconText || '•';
     iconText.hidden = false;
   }
 
   let remaining = Math.max(5, Number(payload.durationSeconds) || 18);
+  const total = remaining;
   countdown.textContent = `${remaining}s`;
   const timer = setInterval(() => {
     remaining -= 1;
     countdown.textContent = `${remaining}s`;
+    progress.style.transform = `scaleX(${Math.max(0, remaining / total)})`;
     if (remaining <= 0) {
       clearInterval(timer);
       window.close();

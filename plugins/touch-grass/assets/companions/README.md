@@ -1,6 +1,6 @@
 # Companion assets
 
-Bundled cat companions will live in one directory per cat. The first two cats are intentionally left open until their real-life references and art direction are available.
+Bundled cat companions live in one directory per cat. The first two directories are intentionally absent until their real-life references and art direction are available. Add them to `manifest.json` only after every required animation is ready.
 
 Each companion directory may contain:
 
@@ -13,10 +13,12 @@ eyes.gif
 nap.gif
 ```
 
-Animated WebP and still PNG/JPEG files also work. Keep each asset approximately square, under 2 MB, and readable at 160 px. Transparent backgrounds are preferred. The runtime falls back to the matching action icon when a file is absent.
+GIF and animated WebP are supported. Keep each asset under 2 MB and readable in a 190 × 216 px stage; transparent backgrounds are preferred. All six actions are required for a complete cat pack. The action-icon placeholder exists only for development and blocks release readiness.
 
 Users can keep personal assets anywhere on their computer and import them with:
 
 ```bash
 touch-grass companions add <id> --name "Cat name" --dir /absolute/path/to/assets
 ```
+
+The import command rejects an incomplete pack instead of silently showing a non-cat fallback.

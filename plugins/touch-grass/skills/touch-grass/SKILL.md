@@ -1,6 +1,6 @@
 ---
 name: touch-grass
-description: Configure and test local break reminders while using Codex or Claude Code. Use when the user asks to change reminder timing, enable or disable break types, add a custom reminder or cat companion, snooze reminders, inspect status, or open Touch Grass settings.
+description: Configure and test local cat-GIF break reminders while using Codex or Claude Code. Use when the user asks to change reminder timing, enable or disable break types, add a custom reminder or cat, snooze reminders, see examples, or preview a reminder.
 ---
 
 # Touch Grass
@@ -9,26 +9,33 @@ Translate the user's request into the bundled `touch-grass` CLI. Prefer the exec
 
 Do not edit `~/.touch-grass/config.json` directly. The CLI validates and atomically saves changes.
 
+The product vocabulary is intentionally human. Do not expose implementation labels such as `idle reset`, `delivery`, `order`, `activeMs`, state files, or raw configuration unless the user explicitly asks for developer diagnostics. When the user asks what they can change, run `touch-grass settings` and present its natural-language examples rather than a settings inventory.
+
 Common requests:
 
 - “Remind me every 35 minutes” → `touch-grass config set interval 35`
-- “Reset the timer after 15 idle minutes” → `touch-grass config set idle-reset 15`
 - “Keep quiet from 10 PM to 8 AM” → `touch-grass config set quiet-hours 22:00-08:00`
 - “Turn snack reminders off” → `touch-grass reminders disable snack`
 - “Turn naps back on” → `touch-grass reminders enable nap`
-- “Add a breathing reminder” → `touch-grass reminders add breathing --title "Breathing break" --message "Take five slow breaths." --icon "◌"`
+- “Add a breathing reminder using this GIF” → `touch-grass reminders add breathing --title "Breathing break" --message "Take five slow breaths." --gif "/absolute/path/breathe.gif" --icon "◌"`
 - “Use my cat Juniper from this folder” → `touch-grass companions add juniper --name "Juniper" --dir "/absolute/path"`
 - “Rotate my cats” → `touch-grass companions use rotate`
-- “Show my settings” → `touch-grass settings`
-- “Keep reminders inside this agent” → `touch-grass config set delivery agent`
-- “Use the animated local popup” → `touch-grass config set delivery popup`
+- “What can I customize?” → `touch-grass settings`
 - “Show me what the nap reminder looks like” → `touch-grass test nap`
 - “Pause reminders for 30 minutes” → `touch-grass snooze 30`
 
-For a companion folder, accept `.gif`, `.webp`, `.png`, `.jpg`, or `.jpeg` files named after actions: `water`, `stretch`, `snack`, `walk`, `eyes`, and `nap`. Missing actions fall back to the action icon. Do not invent asset paths; inspect the supplied folder first when needed.
+For a companion folder, require animated `.gif` or `.webp` files named `water`, `stretch`, `snack`, `walk`, `eyes`, and `nap`. All six are required because every reminder must have a matching cat animation. Do not invent asset paths; inspect the supplied folder first when needed.
 
-After a change, report the effective setting in plain language. If the user asks what is configured, use `touch-grass status --json`, `touch-grass config get`, `touch-grass reminders list`, or `touch-grass companions list` as appropriate.
+After a change, acknowledge the outcome naturally rather than reporting a setting mutation. Good responses include:
+
+- “Okay, I'll nudge you about every 40 minutes while you're coding.”
+- “Okay, I won't remind you about snacks anymore.”
+- “Nap reminders are back in the mix.”
+- “I'll stay quiet between 10 PM and 8 AM.”
+- “Mochi is ready to bring your reminders.”
+
+Do not say “setting X changed to Y,” dump command output, or enumerate backend fields. If a command returns structured details, translate only the user-visible outcome.
 
 Touch Grass is local-only. Do not add network access, upload activity data, or read transcripts to configure it.
 
-Native `agent` delivery is the default. When `touch-grass test <id>` returns a reminder, present that reminder directly to the user. Do not claim that native agent reminders can render animated GIFs. Cat animation is available only in optional `popup` delivery mode.
+Reminders always open as local popup banners. `touch-grass test <id>` launches one immediately. The banner may show an explicit art placeholder during development, but a public release is not ready until two complete bundled cat-GIF packs pass `touch-grass doctor`.

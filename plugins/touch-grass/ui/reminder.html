@@ -9,22 +9,28 @@
   </head>
   <body>
     <main class="stage" aria-live="polite">
-      <section class="bubble" id="bubble">
-        <div class="bubble__topline">
-          <span class="brand"><span class="brand__sprout" aria-hidden="true">⌁</span> touch grass</span>
-          <span class="countdown" id="countdown" aria-label="Seconds until this reminder closes"></span>
-        </div>
+      <section class="banner" id="banner">
         <div class="visual" id="visual">
+          <div class="visual__placeholder" id="placeholder" hidden>
+            <img class="visual__icon" id="icon" alt="">
+            <span>cat GIF<br>lands here</span>
+          </div>
           <img class="visual__pet" id="pet" alt="" hidden>
-          <img class="visual__icon" id="icon" alt="" hidden>
           <span class="visual__text" id="icon-text" aria-hidden="true" hidden></span>
           <span class="visual__ground" aria-hidden="true"></span>
         </div>
-        <p class="eyebrow" id="eyebrow">A small reset</p>
-        <h1 id="title">Time for a break</h1>
-        <p class="message" id="message">Move around for a moment.</p>
-        <button type="button" id="done">Done — back in a bit</button>
-        <span class="tail" aria-hidden="true"></span>
+
+        <div class="copy">
+          <div class="topline">
+            <span class="brand"><span class="brand__dot" aria-hidden="true"></span>touch grass</span>
+            <span class="countdown" id="countdown" aria-label="Seconds until this reminder closes"></span>
+          </div>
+          <p class="eyebrow" id="eyebrow">Your cat has a suggestion</p>
+          <h1 id="title">Time for a break</h1>
+          <p class="message" id="message">Move around for a moment.</p>
+          <button type="button" id="done">Got it</button>
+        </div>
+        <span class="progress" id="progress" aria-hidden="true"></span>
       </section>
     </main>
     <script src="./reminder.js"></script>

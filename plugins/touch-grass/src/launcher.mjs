@@ -44,7 +44,9 @@ function browserCandidates(env = process.env) {
       ...custom,
       path.join(env.PROGRAMFILES ?? 'C:\\Program Files', 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
       path.join(env['PROGRAMFILES(X86)'] ?? 'C:\\Program Files (x86)', 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
-      path.join(env.PROGRAMFILES ?? 'C:\\Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe')
+      path.join(env.PROGRAMFILES ?? 'C:\\Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+      path.join(env.LOCALAPPDATA ?? '', 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+      path.join(env.LOCALAPPDATA ?? '', 'Google', 'Chrome', 'Application', 'chrome.exe')
     ];
   }
   return [...custom, 'google-chrome', 'chromium', 'chromium-browser', 'brave-browser', 'microsoft-edge'];
@@ -57,23 +59,22 @@ export function resolveReminderCommand(url, env = process.env) {
       executable: browser,
       args: [
         `--app=${url}`,
-        '--window-size=420,420',
-        '--window-position=32,72',
+        '--window-size=590,270',
+        '--window-position=32,54',
         '--no-first-run',
         '--disable-session-crashed-bubble'
       ],
       mode: 'app-window'
     };
   }
-  if (process.platform === 'darwin') return { executable: '/usr/bin/open', args: [url], mode: 'browser-tab' };
-  if (process.platform === 'win32') {
-    return { executable: 'cmd.exe', args: ['/d', '/s', '/c', 'start', '', url], mode: 'browser-tab' };
-  }
-  return { executable: 'xdg-open', args: [url], mode: 'browser-tab' };
+  return { executable: null, args: [], mode: 'unavailable' };
 }
 
 function launch(command, dryRun = false) {
   if (dryRun) return command;
+  if (!command.executable || command.mode !== 'app-window') {
+    throw new Error('No supported local popup host was found. Install Chrome, Chromium, Brave, or Edge and try again.');
+  }
   const child = spawn(command.executable, command.args, {
     detached: true,
     stdio: 'ignore',

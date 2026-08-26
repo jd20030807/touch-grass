@@ -5,13 +5,13 @@
     "name": "Touch Grass contributors"
   },
   "metadata": {
-    "description": "Local-first break reminders for vibe-coding sessions"
+    "description": "Local cat-GIF break reminder banners for vibe-coding sessions"
   },
   "plugins": [
     {
       "name": "touch-grass",
       "source": "./plugins/touch-grass",
-      "description": "Track active agent time and show gentle local break reminders.",
+      "description": "Show gentle local popup banners with matching cat animations.",
       "version": "0.1.0",
       "author": {
         "name": "Touch Grass contributors"

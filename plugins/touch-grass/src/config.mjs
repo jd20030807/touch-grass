@@ -10,7 +10,6 @@ const PRESETS_PATH = path.join(PLUGIN_ROOT, 'presets.json');
 const DEFAULT_CONFIG = Object.freeze({
   schemaVersion: 1,
   enabled: true,
-  delivery: 'agent',
   intervalMinutes: 50,
   idleResetMinutes: 10,
   reminderDurationSeconds: 18,
@@ -138,18 +137,14 @@ export function normalizeConfig(input = {}) {
   const quiet = input.quietHours && typeof input.quietHours === 'object' ? input.quietHours : {};
   const order = input.order ?? base.order;
   if (!['shuffle', 'cycle'].includes(order)) throw new Error('order must be shuffle or cycle.');
-  const delivery = input.delivery ?? base.delivery;
-  if (!['agent', 'popup'].includes(delivery)) throw new Error('delivery must be agent or popup.');
-
   const config = {
     schemaVersion: 1,
     enabled: input.enabled ?? base.enabled,
-    delivery,
     intervalMinutes: requireNumber(input.intervalMinutes ?? base.intervalMinutes, 'intervalMinutes', 1, 480),
     idleResetMinutes: requireNumber(input.idleResetMinutes ?? base.idleResetMinutes, 'idleResetMinutes', 1, 180),
     reminderDurationSeconds: requireNumber(input.reminderDurationSeconds ?? base.reminderDurationSeconds, 'reminderDurationSeconds', 5, 120),
     order,
-    companion: String(input.companion ?? base.companion),
+    companion: input.companion === 'none' ? 'rotate' : String(input.companion ?? base.companion),
     quietHours: {
       enabled: quiet.enabled ?? base.quietHours.enabled,
       start: cleanTime(quiet.start ?? base.quietHours.start, 'quietHours.start'),
@@ -174,9 +169,7 @@ export function normalizeConfig(input = {}) {
     if (companionIds.has(companion.id)) throw new Error(`Duplicate companion id: ${companion.id}`);
     companionIds.add(companion.id);
   }
-  if (!['rotate', 'none'].includes(config.companion) && !companionIds.has(config.companion)) {
-    throw new Error(`Unknown companion: ${config.companion}`);
-  }
+  if (config.companion !== 'rotate') config.companion = cleanId(config.companion, 'companion id');
 
   return config;
 }

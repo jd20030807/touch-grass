@@ -2,7 +2,7 @@
   "name": "touch-grass-repository",
   "version": "0.1.0",
   "private": true,
-  "description": "A local-first break reminder plugin for Codex and Claude Code.",
+  "description": "Local cat-GIF popup reminders for Codex and Claude Code.",
   "type": "module",
   "scripts": {
     "test": "node --test plugins/touch-grass/test/*.test.mjs",

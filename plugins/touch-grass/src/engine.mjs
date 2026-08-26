@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   PLUGIN_ROOT,
@@ -44,6 +45,28 @@ export async function availableReminders(config) {
   return [...builtins, ...custom];
 }
 
+export async function availableCompanions(config) {
+  const manifestPath = path.join(PLUGIN_ROOT, 'assets', 'companions', 'manifest.json');
+  let bundled = [];
+  try {
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+    bundled = (manifest.companions ?? []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      bundled: true,
+      assets: Object.fromEntries(
+        Object.entries(item.assets ?? {}).map(([action, relativePath]) => [
+          action,
+          path.join(PLUGIN_ROOT, 'assets', 'companions', item.id, relativePath)
+        ])
+      )
+    }));
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  return [...bundled, ...config.companions];
+}
+
 function chooseReminder(reminders, config, state, random = Math.random) {
   if (reminders.length === 0) return null;
   let index;
@@ -59,14 +82,14 @@ function chooseReminder(reminders, config, state, random = Math.random) {
   return reminders[index];
 }
 
-function chooseCompanion(config, state) {
-  if (config.companion === 'none' || config.companions.length === 0) return null;
+function chooseCompanion(companions, config, state) {
+  if (companions.length === 0) return null;
   if (config.companion === 'rotate') {
-    const index = state.nextCompanionIndex % config.companions.length;
-    state.nextCompanionIndex = (index + 1) % config.companions.length;
-    return config.companions[index];
+    const index = state.nextCompanionIndex % companions.length;
+    state.nextCompanionIndex = (index + 1) % companions.length;
+    return companions[index];
   }
-  return config.companions.find((item) => item.id === config.companion) ?? null;
+  return companions.find((item) => item.id === config.companion) ?? companions[0];
 }
 
 async function toPayload(reminder, companion, durationSeconds) {
@@ -82,6 +105,7 @@ async function toPayload(reminder, companion, durationSeconds) {
     assetPath,
     companionId: companion?.id ?? null,
     companionName: companion?.name ?? null,
+    artPending: !assetPath,
     durationSeconds
   };
 }
@@ -132,7 +156,8 @@ export async function recordActivity(input = {}, options = {}) {
     }
 
     const reminder = chooseReminder(reminders, config, state, random);
-    const companion = chooseCompanion(config, state);
+    const companions = await availableCompanions(config);
+    const companion = chooseCompanion(companions, config, state);
     const payload = await toPayload(reminder, companion, config.reminderDurationSeconds);
     state.activeMs = 0;
     state.snoozedUntil = null;
@@ -152,13 +177,9 @@ export async function previewReminder(id, options = {}) {
   const reminders = await availableReminders(config);
   const reminder = reminders.find((item) => item.id === id) ?? reminders[0];
   if (!reminder) throw new Error('No enabled reminders are available.');
-  const companion = chooseCompanion(config, state);
+  const companions = await availableCompanions(config);
+  const companion = chooseCompanion(companions, config, state);
   return toPayload(reminder, companion, config.reminderDurationSeconds);
-}
-
-export function formatAgentReminder(payload) {
-  const icon = payload.iconText ? `${payload.iconText} ` : '';
-  return `🌱 Touch Grass\n${icon}${payload.title}\n${payload.message}`;
 }
 
 export async function statusSnapshot(env = process.env) {
@@ -167,7 +188,6 @@ export async function statusSnapshot(env = process.env) {
   const remainingMs = Math.max(0, config.intervalMinutes * 60_000 - state.activeMs);
   return {
     enabled: config.enabled,
-    delivery: config.delivery,
     intervalMinutes: config.intervalMinutes,
     activeMinutes: Math.round((state.activeMs / 60_000) * 10) / 10,
     remainingMinutes: Math.ceil(remainingMs / 60_000),

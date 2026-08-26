@@ -12,7 +12,7 @@ import {
   updateConfig,
   updateState
 } from '../src/config.mjs';
-import { availableReminders, formatAgentReminder, previewReminder, recordActivity, statusSnapshot } from '../src/engine.mjs';
+import { availableCompanions, availableReminders, previewReminder, recordActivity, statusSnapshot } from '../src/engine.mjs';
 import { launchReminder, resolveReminderCommand } from '../src/launcher.mjs';
 
 function parseArgs(tokens) {
@@ -44,6 +44,24 @@ function boolValue(value) {
   throw new Error('Expected true/false or on/off.');
 }
 
+function friendlyTime(value) {
+  const [hours, minutes] = value.split(':').map(Number);
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const displayHour = hours % 12 || 12;
+  return `${displayHour}${minutes ? `:${String(minutes).padStart(2, '0')}` : ''} ${suffix}`;
+}
+
+function reminderPhrase(id) {
+  return ({
+    water: 'water breaks',
+    stretch: 'stretch breaks',
+    snack: 'snack breaks',
+    walk: 'short walks',
+    eyes: 'screen breaks',
+    nap: 'nap breaks'
+  })[id] ?? id.replaceAll('-', ' ');
+}
+
 async function readStdin() {
   let input = '';
   for await (const chunk of process.stdin) input += chunk;
@@ -62,7 +80,6 @@ async function setConfigValue(key, rawValue) {
     else if (['intervalMinutes', 'idleResetMinutes', 'reminderDurationSeconds'].includes(canonical)) {
       current[canonical] = Number(rawValue);
     } else if (canonical === 'order') current.order = rawValue;
-    else if (canonical === 'delivery') current.delivery = rawValue;
     else if (canonical === 'companion') current.companion = rawValue;
     else if (canonical === 'quiet-hours') {
       if (String(rawValue).toLowerCase() === 'off') current.quietHours.enabled = false;
@@ -74,13 +91,29 @@ async function setConfigValue(key, rawValue) {
     } else throw new Error(`Unknown setting: ${key}`);
     return current;
   });
-  print(config);
+  if (canonical === 'intervalMinutes') {
+    print(`Okay — I'll nudge you to take a break about every ${config.intervalMinutes} minutes while you're coding.`);
+  } else if (canonical === 'reminderDurationSeconds') {
+    print(`Okay — each reminder will hang around for ${config.reminderDurationSeconds} seconds.`);
+  } else if (canonical === 'quiet-hours') {
+    print(config.quietHours.enabled
+      ? `Okay — I'll stay quiet between ${friendlyTime(config.quietHours.start)} and ${friendlyTime(config.quietHours.end)}.`
+      : 'Okay — reminders can pop up at any time.');
+  } else if (canonical === 'enabled') {
+    print(config.enabled ? 'Touch Grass is back on.' : 'Okay — Touch Grass is paused for now.');
+  } else if (canonical === 'companion') {
+    print(config.companion === 'rotate'
+      ? `Okay — I'll rotate through your cats.`
+      : `Okay — ${config.companion} will bring your reminders.`);
+  } else if (canonical === 'order') {
+    print(config.order === 'shuffle' ? `Okay — I'll keep the reminders varied.` : `Okay — I'll take the reminders in a steady rotation.`);
+  } else print('Okay — I adjusted how Touch Grass notices an active coding stretch.');
 }
 
 async function setReminderEnabled(id, enabled) {
   const presets = await loadPresets();
   const presetIds = new Set(presets.reminders.map((item) => item.id));
-  const config = await updateConfig((current) => {
+  await updateConfig((current) => {
     if (presetIds.has(id)) {
       const disabled = new Set(current.disabledPresetIds);
       if (enabled) disabled.delete(id);
@@ -93,11 +126,19 @@ async function setReminderEnabled(id, enabled) {
     reminder.enabled = enabled;
     return current;
   });
-  print({ id, enabled, disabledPresetIds: config.disabledPresetIds });
+  print(enabled
+    ? `Okay — I'll remind you about ${reminderPhrase(id)} again.`
+    : `Okay — I won't remind you about ${reminderPhrase(id)} anymore.`);
 }
 
 async function addReminder(id, flags) {
-  if (!flags.title || !flags.message) throw new Error('reminders add requires --title and --message.');
+  if (!flags.title || !flags.message || !flags.gif) {
+    throw new Error('A custom reminder needs --title, --message, and a matching animated --gif.');
+  }
+  const assetPath = path.resolve(flags.gif);
+  if (!/\.(?:gif|webp)$/i.test(assetPath) || !(await pathExists(assetPath))) {
+    throw new Error('The custom reminder animation must be an existing GIF or animated WebP file.');
+  }
   const presets = await loadPresets();
   if (presets.reminders.some((item) => item.id === id)) throw new Error(`A preset already uses the id ${id}.`);
   const config = await updateConfig((current) => {
@@ -108,21 +149,22 @@ async function addReminder(id, flags) {
       message: flags.message,
       iconText: flags.icon ?? '•',
       enabled: true,
-      ...(flags.gif ? { assetPath: path.resolve(flags.gif) } : {})
+      assetPath
     });
     return current;
   });
-  print(config.customReminders.find((item) => item.id === id));
+  const reminder = config.customReminders.find((item) => item.id === id);
+  print(`Lovely — I'll add “${reminder.title}” to the reminder mix.`);
 }
 
 async function removeReminder(id) {
-  const config = await updateConfig((current) => {
+  await updateConfig((current) => {
     const before = current.customReminders.length;
     current.customReminders = current.customReminders.filter((item) => item.id !== id);
     if (current.customReminders.length === before) throw new Error(`Custom reminder ${id} was not found.`);
     return current;
   });
-  print({ removed: id, customReminderCount: config.customReminders.length });
+  print(`Okay — I won't use the ${reminderPhrase(id)} reminder anymore.`);
 }
 
 async function addCompanion(id, flags) {
@@ -131,33 +173,36 @@ async function addCompanion(id, flags) {
   if (!(await pathExists(directory))) throw new Error(`Directory does not exist: ${directory}`);
   const files = new Set(await readdir(directory));
   const presets = await loadPresets();
-  const extensions = ['gif', 'webp', 'png', 'jpg', 'jpeg'];
+  const extensions = ['gif', 'webp'];
   const assets = {};
   for (const reminder of presets.reminders) {
     const filename = extensions.map((ext) => `${reminder.id}.${ext}`).find((candidate) => files.has(candidate));
     if (filename) assets[reminder.id] = path.join(directory, filename);
   }
-  if (Object.keys(assets).length === 0) {
-    throw new Error('No matching assets found. Use filenames such as water.gif, stretch.gif, and nap.gif.');
+  const missing = presets.reminders.map((item) => item.id).filter((action) => !assets[action]);
+  if (missing.length > 0) {
+    throw new Error(`This cat pack still needs animated files for: ${missing.join(', ')}.`);
   }
   const config = await updateConfig((current) => {
     if (current.companions.some((item) => item.id === id)) throw new Error(`Companion ${id} already exists.`);
     current.companions.push({ id, name: flags.name ?? id, assets });
-    if (current.companion === 'none') current.companion = id;
     return current;
   });
-  print(config.companions.find((item) => item.id === id));
+  const companion = config.companions.find((item) => item.id === id);
+  print(`Perfect — ${companion.name} is ready to bring your reminders.`);
 }
 
 async function removeCompanion(id) {
-  const config = await updateConfig((current) => {
+  let removedName = id;
+  await updateConfig((current) => {
     const before = current.companions.length;
+    removedName = current.companions.find((item) => item.id === id)?.name ?? id;
     current.companions = current.companions.filter((item) => item.id !== id);
     if (current.companions.length === before) throw new Error(`Companion ${id} was not found.`);
-    if (current.companion === id) current.companion = current.companions.length ? 'rotate' : 'none';
+    if (current.companion === id) current.companion = 'rotate';
     return current;
   });
-  print({ removed: id, companion: config.companion });
+  print(`Okay — I removed ${removedName} from the cat rotation.`);
 }
 
 async function doctor() {
@@ -165,21 +210,33 @@ async function doctor() {
   const state = await loadState();
   const paths = getDataPaths();
   const reminders = await availableReminders(config);
+  const presets = await loadPresets();
+  const requiredActions = presets.reminders.map((item) => item.id);
   const missingAssets = [];
-  for (const companion of config.companions) {
-    for (const [action, assetPath] of Object.entries(companion.assets)) {
-      if (!(await pathExists(assetPath))) missingAssets.push({ companion: companion.id, action, assetPath });
+  const companions = await availableCompanions(config);
+  for (const companion of companions) {
+    for (const action of requiredActions) {
+      const assetPath = companion.assets[action];
+      if (!assetPath || !(await pathExists(assetPath))) {
+        missingAssets.push({ companion: companion.id, action, assetPath: assetPath ?? null });
+      }
     }
   }
+  const bundledCompanions = companions.filter((item) => item.bundled);
+  const bundledCatPacksReady = bundledCompanions.length >= 2
+    && !missingAssets.some((item) => bundledCompanions.some((companion) => companion.id === item.companion));
   const sample = reminders[0] ? await previewReminder(reminders[0].id) : null;
   const launch = sample ? resolveReminderCommand('file:///touch-grass-preview') : null;
+  const popupReady = launch?.mode === 'app-window';
   print({
-    ok: missingAssets.length === 0 && reminders.length > 0,
+    ok: reminders.length > 0 && bundledCatPacksReady && popupReady,
     node: process.version,
     platform: process.platform,
     dataDir: paths.dir,
     enabledReminders: reminders.map((item) => item.id),
     companion: config.companion,
+    bundledCatPacksReady,
+    popupReady,
     missingAssets,
     reminderWindow: launch,
     state
@@ -187,20 +244,17 @@ async function doctor() {
 }
 
 async function showSettings() {
-  const config = await loadConfig();
-  const reminders = await availableReminders(config);
-  print(`Touch Grass settings (stored only on this computer)
+  print(`You can shape Touch Grass just by talking to your agent. Try:
 
-Delivery: ${config.delivery === 'agent' ? 'inside Codex / Claude Code' : 'local popup window'}
-Reminder interval: ${config.intervalMinutes} active minutes
-Idle reset: ${config.idleResetMinutes} minutes
-Reminder duration: ${config.reminderDurationSeconds} seconds
-Order: ${config.order}
-Quiet hours: ${config.quietHours.enabled ? `${config.quietHours.start}-${config.quietHours.end}` : 'off'}
-Enabled reminders: ${reminders.map((item) => item.id).join(', ') || 'none'}
-Companion: ${config.companion}
+“Remind me to take a break every 40 minutes.”
+“Don't remind me about snacks anymore.”
+“Keep nap reminders, but turn walks off.”
+“Don't interrupt me between 10 PM and 8 AM.”
+“Snooze reminders for half an hour.”
+“Show me a water reminder.”
+“Use my cat Mochi from /absolute/path/to/mochi.”
 
-Ask your agent to change any of these settings, or run touch-grass config get for JSON.`);
+Everything stays on this computer.`);
 }
 
 function help() {
@@ -211,14 +265,14 @@ Usage:
   touch-grass settings
   touch-grass test [reminder-id] [--dry-run]
   touch-grass config get
-  touch-grass config set <interval|idle-reset|duration|delivery|order|companion|quiet-hours|enabled> <value>
+  touch-grass config set <interval|duration|order|companion|quiet-hours|enabled> <value>
   touch-grass reminders list
   touch-grass reminders enable|disable <id>
-  touch-grass reminders add <id> --title "..." --message "..." [--icon "..."] [--gif /path/file.gif]
+  touch-grass reminders add <id> --title "..." --message "..." --gif /path/file.gif [--icon "..."]
   touch-grass reminders remove <id>
   touch-grass companions list
   touch-grass companions add <id> --name "..." --dir /path/to/assets
-  touch-grass companions use <id|rotate|none>
+  touch-grass companions use <id|rotate>
   touch-grass companions remove <id>
   touch-grass snooze [minutes]
   touch-grass reset-activity
@@ -232,10 +286,7 @@ async function main() {
   if (command === 'hook') {
     try {
       const result = await recordActivity(await readStdin());
-      if (result.due) {
-        if (result.config.delivery === 'popup') launchReminder(result.payload);
-        else print({ systemMessage: formatAgentReminder(result.payload) });
-      }
+      if (result.due) launchReminder(result.payload);
     } catch (error) {
       if (process.env.TOUCH_GRASS_DEBUG === '1') process.stderr.write(`touch-grass: ${error.message}\n`);
     }
@@ -249,21 +300,18 @@ async function main() {
     const status = await statusSnapshot();
     if (flags.json) print(status);
     else print(status.enabled
-      ? `Touch Grass is on. About ${status.remainingMinutes} active minute(s) until the next break.`
+      ? 'Touch Grass is on and watching this coding stretch. I’ll pop in when it’s time for a break.'
       : 'Touch Grass is off.');
     return;
   }
   if (command === 'test') {
     const payload = await previewReminder(positionals[0] ?? 'water');
     if (flags['dry-run']) {
-      print({ payload, delivery: (await loadConfig()).delivery });
+      print({ payload, launch: launchReminder(payload, { dryRun: true }) });
       return;
     }
-    const config = await loadConfig();
-    if (config.delivery === 'popup') {
-      launchReminder(payload);
-      print(`Opened the ${payload.id} reminder.`);
-    } else print(formatAgentReminder(payload));
+    launchReminder(payload);
+    print(`Here you go — ${reminderPhrase(payload.id)} are on the case.`);
     return;
   }
   if (command === 'config' && positionals[0] === 'get') {
@@ -311,17 +359,17 @@ async function main() {
     return;
   }
   if (command === 'companions' && positionals[0] === 'use') {
-    if (!positionals[1]) throw new Error('companions use requires an id, rotate, or none.');
+    if (!positionals[1]) throw new Error('companions use requires a cat id or rotate.');
     await setConfigValue('companion', positionals[1]);
     return;
   }
   if (command === 'snooze') {
     const minutes = Math.min(240, Math.max(1, Number(positionals[0]) || 15));
-    const state = await updateState((current) => ({
+    await updateState((current) => ({
       ...current,
       snoozedUntil: new Date(Date.now() + minutes * 60_000).toISOString()
     }));
-    print({ snoozedUntil: state.snoozedUntil });
+    print(`Okay — I'll stay quiet for ${minutes} minutes.`);
     return;
   }
   if (command === 'reset-activity') {

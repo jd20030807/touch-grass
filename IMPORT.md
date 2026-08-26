@@ -1,16 +1,16 @@
 # Import Touch Grass
 
-This repository is both a Codex marketplace and a Claude Code marketplace. Replace `jd20030807/touch-grass` only when working from a fork.
+Touch Grass is both a Codex marketplace and a Claude Code marketplace. It runs local lifecycle hooks and opens a local cat-GIF reminder banner. Replace `jd20030807/touch-grass` only when installing a fork.
 
 ## Codex
 
 1. Run `codex plugin marketplace add jd20030807/touch-grass`.
-2. Open `/plugins`, choose the **touch-grass** marketplace, and install **Touch Grass**.
-3. Start a new Codex session.
-4. Open `/hooks`, inspect the four local lifecycle hooks, and trust them if their commands point to `bin/touch-grass.mjs` inside the installed plugin.
-5. Ask Codex: `Show my Touch Grass settings and test the nap reminder.`
+2. Run `codex plugin add touch-grass@touch-grass`, or install **Touch Grass** from `/plugins`.
+3. Start a new Codex task.
+4. Review the Touch Grass hooks and trust them only when they run `bin/touch-grass.mjs` inside the installed plugin.
+5. Ask: `What can I customize in Touch Grass? Then show me a nap reminder.`
 
-Codex intentionally requires the user to review non-managed plugin hooks. Do not bypass that trust review.
+Codex intentionally requires review of non-managed plugin hooks. Do not bypass that review.
 
 ## Claude Code
 
@@ -21,14 +21,21 @@ claude plugin marketplace add jd20030807/touch-grass
 claude plugin install touch-grass@touch-grass --scope user
 ```
 
-Then start a fresh session or run `/reload-plugins`. Review the plugin and hooks when prompted, then ask Claude: `Show my Touch Grass settings and test the nap reminder.`
+Start a fresh session or run `/reload-plugins`, review the local hooks when prompted, then ask: `What can I customize in Touch Grass? Then show me a nap reminder.`
 
 ## Local development
+
+For Claude Code:
 
 ```bash
 claude --plugin-dir ./plugins/touch-grass
 ```
 
-For Codex, add the local marketplace root with `codex plugin marketplace add ./` and install it through `/plugins`.
+For Codex:
 
-The default delivery is a native hook message inside the active agent. Configuration is chat-first; no browser settings panel is opened.
+```bash
+codex plugin marketplace add ./
+codex plugin add touch-grass@touch-grass
+```
+
+The normal settings experience is chat-based; there is no settings webpage. Reminders open as a small local `file://` banner with a matching cat animation.
