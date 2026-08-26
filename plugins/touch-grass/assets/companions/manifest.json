@@ -1,4 +1,29 @@
 {
   "schemaVersion": 1,
-  "companions": []
+  "companions": [
+    {
+      "id": "nian",
+      "name": "Nian",
+      "assets": {
+        "water": "water.gif",
+        "stretch": "stretch.gif",
+        "snack": "snack.gif",
+        "walk": "walk.gif",
+        "eyes": "eyes.gif",
+        "bedtime": "bedtime.gif"
+      }
+    },
+    {
+      "id": "you",
+      "name": "You",
+      "assets": {
+        "water": "water.gif",
+        "stretch": "stretch.gif",
+        "snack": "snack.gif",
+        "walk": "walk.gif",
+        "eyes": "eyes.gif",
+        "bedtime": "bedtime.gif"
+      }
+    }
+  ]
 }

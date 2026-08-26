@@ -13,7 +13,7 @@ Touch Grass notices sustained, user-present coding time, then opens a notificati
 There is no settings website. People customize it by talking to Codex or Claude Code, and the agent answers in ordinary language. The plugin, preferences, timing data, banner, and cat files all stay on the computer.
 
 > [!IMPORTANT]
-> The reminder engine and popup banner work now. The two default cat packs are intentionally not included yet; they will be created from the project's real-life model cats. Until those references and animations are supplied, previews show a clearly labeled development placeholder and `touch-grass doctor` reports that the release is not art-ready.
+> Touch Grass now includes two complete animated companions based on the project's real-life model cats: Nian and You. Each has matching water, stretch, snack, walk, eye-rest, and bedtime GIFs, and the default `rotate` mode alternates between them.
 
 ## What works now
 
@@ -72,7 +72,7 @@ Remind me to walk around every minute while I test this.
 
 The first request displays the one-time introduction and customization examples. For automatic timing, keep the coding app in front and continue using your keyboard or mouse for at least a minute. A due reminder is delivered on the next agent event. Afterwards, say `Remind me to walk around every two hours again.`
 
-The current popup uses the deliberate art placeholder. It is not a substitute cat and will be replaced only after the real-cat art pass.
+The popup uses the bundled Nian and You animations. The action-icon placeholder appears only if an asset cannot be loaded.
 
 ## Use it by talking naturally
 
@@ -168,9 +168,6 @@ touch-grass doctor
 
 ## Before the first public release
 
-- Create two complete six-action cat packs from the real model references
-- Add them to `assets/companions/manifest.json`
-- Add native popup companions for Windows and Linux
 - Confirm animated GIF/WebP playback in every native popup
 - Run the automated tests and both host plugin validators
 - Review installation from a clean local Codex and Claude Code profile

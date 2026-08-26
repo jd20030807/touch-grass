@@ -1,6 +1,6 @@
 # Companion assets
 
-Bundled cat companions live in one directory per cat. The first two directories are intentionally absent until their real-life references and art direction are available. Add them to `manifest.json` only after every required animation is ready.
+Bundled cat companions live in one directory per cat. Touch Grass ships with Nian and You, both based on the project's real-life model cats. Each pack contains all six required animations and is registered in `manifest.json`.
 
 Each companion directory may contain:
 
@@ -13,7 +13,7 @@ eyes.gif
 bedtime.gif
 ```
 
-GIF and animated WebP are supported. Keep each asset under 2 MB and readable in a 92 × 104 px vignette; transparent backgrounds are preferred. All six actions are required for a complete cat pack. The bedtime animation serves both the wind-down and bedtime stages. The action-icon placeholder exists only for development and blocks release readiness.
+GIF and animated WebP are supported. Keep each asset under 2 MB and readable in a 92 × 104 px vignette; transparent backgrounds are preferred. All six actions are required for a complete cat pack. The bedtime animation serves both the wind-down and bedtime stages. The action-icon placeholder remains a failure fallback rather than normal product art.
 
 Users can keep personal assets anywhere on their computer and import them with:
 

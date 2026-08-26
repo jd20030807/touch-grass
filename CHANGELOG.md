@@ -12,3 +12,4 @@
 - Public-release check requiring two complete bundled cat packs
 - One-time first-use explanation and a guard against chat-only reminder simulation
 - Native macOS popup companion with a private local reminder bridge
+- Complete transparent six-action GIF packs for the real cats Nian and You

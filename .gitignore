@@ -4,3 +4,4 @@ coverage/
 *.log
 .touch-grass/
 plugins/touch-grass/native/macos/dist/
+/work/

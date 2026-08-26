@@ -249,8 +249,9 @@ test('bedtime and wind-down are previewable with the shared bedtime cat action',
     assert.equal(windDown.id, 'bedtime');
     assert.equal(windDown.eventId, 'bedtime-wind-down');
     assert.match(bedtime.iconPath, /bedtime\.svg$/);
-    assert.equal(bedtime.assetPath, null);
-    assert.equal(bedtime.artPending, true);
+    assert.match(bedtime.assetPath, /companions\/nian\/bedtime\.gif$/);
+    assert.equal(bedtime.companionName, 'Nian');
+    assert.equal(bedtime.artPending, false);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
