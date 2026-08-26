@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "touch-grass",
+  "owner": {
+    "name": "Touch Grass contributors"
+  },
+  "metadata": {
+    "description": "Local-first break reminders for vibe-coding sessions"
+  },
+  "plugins": [
+    {
+      "name": "touch-grass",
+      "source": "./plugins/touch-grass",
+      "description": "Track active agent time and show gentle local break reminders.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Touch Grass contributors"
+      },
+      "category": "Productivity",
+      "tags": ["wellness", "breaks", "local-first", "codex", "claude-code"]
+    }
+  ]
+}

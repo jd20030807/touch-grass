@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Touch Grass settings</title>
+    <link rel="stylesheet" href="./settings.css">
+  </head>
+  <body>
+    <div class="shell">
+      <header class="masthead">
+        <a class="wordmark" href="#top" aria-label="Touch Grass settings home">
+          <span class="wordmark__mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>touch grass</span>
+        </a>
+        <div class="local-badge"><span aria-hidden="true"></span> lives on this computer</div>
+      </header>
+
+      <main id="top">
+        <section class="hero" aria-labelledby="page-title">
+          <div class="hero__copy">
+            <p class="kicker">Break rhythm / local only</p>
+            <h1 id="page-title">Keep the good<br>kind of momentum.</h1>
+            <p>Touch Grass notices active agent time, then nudges you before focus turns into furniture.</p>
+          </div>
+          <aside class="timer-card" aria-label="Current reminder status">
+            <div class="timer-card__top">
+              <span class="status-dot" id="status-dot"></span>
+              <span id="status-label">Loading…</span>
+              <label class="switch switch--small">
+                <input type="checkbox" id="enabled">
+                <span aria-hidden="true"></span>
+                <span class="sr-only">Enable Touch Grass</span>
+              </label>
+            </div>
+            <strong id="remaining">—</strong>
+            <span class="timer-card__unit">active minutes to the next break</span>
+            <div class="timer-card__actions">
+              <button class="button button--sun" id="test-nap" type="button">Test nap</button>
+              <button class="button button--quiet" id="snooze" type="button">Snooze 15m</button>
+            </div>
+          </aside>
+        </section>
+
+        <section class="panel rhythm" aria-labelledby="rhythm-title">
+          <div class="section-heading">
+            <div>
+              <p class="kicker">Timing</p>
+              <h2 id="rhythm-title">Your coding rhythm</h2>
+            </div>
+            <p>Only recent agent activity counts. A longer idle gap starts the clock fresh.</p>
+          </div>
+          <div class="field-grid">
+            <label class="field">
+              <span>Remind me every</span>
+              <span class="number-input"><input id="interval" type="number" min="1" max="480" inputmode="numeric"><b>min</b></span>
+            </label>
+            <label class="field">
+              <span>Reset after idle</span>
+              <span class="number-input"><input id="idle-reset" type="number" min="1" max="180" inputmode="numeric"><b>min</b></span>
+            </label>
+            <label class="field">
+              <span>Keep the bubble up</span>
+              <span class="number-input"><input id="duration" type="number" min="5" max="120" inputmode="numeric"><b>sec</b></span>
+            </label>
+            <label class="field">
+              <span>Reminder order</span>
+              <select id="order">
+                <option value="shuffle">Mix it up</option>
+                <option value="cycle">Go in order</option>
+              </select>
+            </label>
+          </div>
+          <div class="quiet-row">
+            <label class="switch-row">
+              <span><b>Quiet hours</b><small>No bubbles during this window.</small></span>
+              <span class="switch"><input type="checkbox" id="quiet-enabled"><span aria-hidden="true"></span></span>
+            </label>
+            <label><span>From</span><input id="quiet-start" type="time"></label>
+            <label><span>Until</span><input id="quiet-end" type="time"></label>
+          </div>
+        </section>
+
+        <section class="panel reminders" aria-labelledby="reminders-title">
+          <div class="section-heading">
+            <div>
+              <p class="kicker">Mix</p>
+              <h2 id="reminders-title">What should interrupt you?</h2>
+            </div>
+            <p>Turn presets on or off. You can ask your agent to add completely custom reminders.</p>
+          </div>
+          <div class="reminder-grid" id="reminder-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="panel companions" aria-labelledby="companions-title">
+          <div class="section-heading">
+            <div>
+              <p class="kicker">Companions</p>
+              <h2 id="companions-title">Your cats go here</h2>
+            </div>
+            <p>Real model cats are coming later. The engine already supports one action file per reminder—including nap.</p>
+          </div>
+          <div class="companion-layout">
+            <div class="cat-slot" aria-hidden="true">
+              <span class="cat-slot__ears"></span>
+              <span class="cat-slot__face">· ᴗ ·</span>
+              <span class="cat-slot__label">portrait pending</span>
+            </div>
+            <div>
+              <div id="companion-list" class="companion-list"></div>
+              <p class="agent-prompt">Tell your agent: <code>Use my cat Juniper from /path/to/juniper</code></p>
+              <p class="file-note">Use <code>water.gif</code>, <code>stretch.gif</code>, <code>snack.gif</code>, <code>walk.gif</code>, <code>eyes.gif</code>, and <code>nap.gif</code>.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="local-note">
+          <span class="local-note__icon" aria-hidden="true">⌂</span>
+          <div><b>No cloud. No transcript reading.</b><p>Touch Grass stores only settings and timing metadata in <code id="data-dir">your local data folder</code>.</p></div>
+          <button class="text-button" id="reset-activity" type="button">Reset timer</button>
+        </section>
+      </main>
+
+      <footer class="save-bar" id="save-bar">
+        <span id="save-status">Settings are up to date.</span>
+        <button class="button button--ink" id="save" type="button" disabled>Save changes</button>
+      </footer>
+    </div>
+    <template id="reminder-template">
+      <article class="reminder-card">
+        <img alt="">
+        <div><b></b><p></p></div>
+        <label class="switch switch--small"><input type="checkbox"><span aria-hidden="true"></span><span class="sr-only">Toggle reminder</span></label>
+      </article>
+    </template>
+    <script src="./settings.js"></script>
+  </body>
+</html>

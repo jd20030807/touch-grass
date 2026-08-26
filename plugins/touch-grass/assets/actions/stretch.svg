@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Stretch break</title>
+  <circle cx="64" cy="27" r="12" fill="#FFD66B" stroke="#173624" stroke-width="6"/>
+  <path fill="none" stroke="#173624" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" d="M64 43v35M64 51 35 27M64 51l29-24M64 77l-23 28M64 77l23 28"/>
+  <path fill="none" stroke="#78A968" stroke-width="5" stroke-linecap="round" d="M25 18 17 10M103 18l8-8"/>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Snack break</title>
+  <path fill="#F4A85F" stroke="#173624" stroke-width="6" stroke-linejoin="round" d="m24 66 40-38 40 38-40 38Z"/>
+  <path fill="#FFF3C7" stroke="#173624" stroke-width="6" stroke-linejoin="round" d="m31 60 33-25 33 25-33 26Z"/>
+  <path fill="none" stroke="#78A968" stroke-width="7" stroke-linecap="round" d="m36 68 28 20 28-20"/>
+</svg>

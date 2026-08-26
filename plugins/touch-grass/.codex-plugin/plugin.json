@@ -1,0 +1,28 @@
+{
+  "name": "touch-grass",
+  "version": "0.1.0",
+  "description": "Local-first break reminders for long vibe-coding sessions.",
+  "author": {
+    "name": "Touch Grass contributors",
+    "url": "https://github.com/jd20030807/touch-grass"
+  },
+  "homepage": "https://github.com/jd20030807/touch-grass#readme",
+  "repository": "https://github.com/jd20030807/touch-grass",
+  "license": "MIT",
+  "keywords": ["wellness", "breaks", "local-first", "vibe-coding"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Touch Grass",
+    "shortDescription": "Gentle local break reminders while you code.",
+    "longDescription": "Tracks active agent time locally and opens a small reminder bubble for water, stretching, snacks, walking, eye rest, or a nap.",
+    "developerName": "Touch Grass contributors",
+    "category": "Productivity",
+    "capabilities": ["Local hooks", "Local settings"],
+    "defaultPrompt": [
+      "Open my Touch Grass settings.",
+      "Remind me to take a break every 45 minutes.",
+      "Test the nap reminder."
+    ],
+    "brandColor": "#78A968"
+  }
+}

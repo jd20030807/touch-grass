@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Touch Grass</title>
+    <link rel="stylesheet" href="./reminder.css">
+  </head>
+  <body>
+    <main class="stage" aria-live="polite">
+      <section class="bubble" id="bubble">
+        <div class="bubble__topline">
+          <span class="brand"><span class="brand__sprout" aria-hidden="true">⌁</span> touch grass</span>
+          <span class="countdown" id="countdown" aria-label="Seconds until this reminder closes"></span>
+        </div>
+        <div class="visual" id="visual">
+          <img class="visual__pet" id="pet" alt="" hidden>
+          <img class="visual__icon" id="icon" alt="" hidden>
+          <span class="visual__text" id="icon-text" aria-hidden="true" hidden></span>
+          <span class="visual__ground" aria-hidden="true"></span>
+        </div>
+        <p class="eyebrow" id="eyebrow">A small reset</p>
+        <h1 id="title">Time for a break</h1>
+        <p class="message" id="message">Move around for a moment.</p>
+        <button type="button" id="done">Done — back in a bit</button>
+        <span class="tail" aria-hidden="true"></span>
+      </section>
+    </main>
+    <script src="./reminder.js"></script>
+  </body>
+</html>

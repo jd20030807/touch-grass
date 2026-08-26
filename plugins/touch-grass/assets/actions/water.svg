@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Water break</title>
+  <path fill="#CDEAF2" stroke="#173624" stroke-width="6" stroke-linejoin="round" d="M34 47h60l-7 61H41z"/>
+  <path fill="#58B8D4" d="M42 70c13 6 31-7 45 0l-4 32H45z"/>
+  <path fill="#CDEAF2" stroke="#173624" stroke-width="6" stroke-linecap="round" d="M65 18c-9 12-14 18-14 26a14 14 0 0 0 28 0c0-8-5-14-14-26Z"/>
+</svg>

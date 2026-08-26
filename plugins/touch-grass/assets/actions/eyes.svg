@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Eye rest</title>
+  <path fill="#FFFDF6" stroke="#173624" stroke-width="6" stroke-linejoin="round" d="M12 64s19-29 52-29 52 29 52 29-19 29-52 29S12 64 12 64Z"/>
+  <circle cx="64" cy="64" r="17" fill="#78A968" stroke="#173624" stroke-width="6"/>
+  <circle cx="64" cy="64" r="6" fill="#173624"/>
+  <path fill="none" stroke="#FFD66B" stroke-width="6" stroke-linecap="round" d="M64 17V7M25 31l-8-8M103 31l8-8"/>
+</svg>
