@@ -5,36 +5,42 @@
       "id": "water",
       "title": "Water break",
       "message": "A few sips now. Your future brain says thanks.",
+      "iconText": "💧",
       "icon": "water.svg"
     },
     {
       "id": "stretch",
       "title": "Unfold yourself",
       "message": "Stand up, reach high, and loosen your shoulders.",
+      "iconText": "🙆",
       "icon": "stretch.svg"
     },
     {
       "id": "snack",
       "title": "Snack check",
       "message": "If you're hungry, grab something that will keep you going.",
+      "iconText": "🍎",
       "icon": "snack.svg"
     },
     {
       "id": "walk",
       "title": "Take a tiny lap",
       "message": "Walk around the room. The code can breathe for a minute.",
+      "iconText": "🚶",
       "icon": "walk.svg"
     },
     {
       "id": "eyes",
       "title": "Look somewhere far away",
       "message": "Give your eyes twenty seconds off the screen.",
+      "iconText": "👀",
       "icon": "eyes.svg"
     },
     {
       "id": "nap",
       "title": "Maybe you need a nap",
       "message": "If focus keeps slipping, a short reset may beat another push.",
+      "iconText": "🌙",
       "icon": "nap.svg"
     }
   ]

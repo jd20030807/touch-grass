@@ -8,4 +8,6 @@ The lifecycle hook receives event JSON from the host and keeps only the current 
 - Windows: `%APPDATA%\\touch-grass`
 - Override: `TOUCH_GRASS_HOME=/path/to/folder`
 
-The settings page binds to `127.0.0.1`, uses a random per-process token, and shuts down after inactivity. It never listens on a public interface.
+The default reminder is returned directly to the active agent as hook output. Touch Grass does not start a settings server.
+
+Optional popup mode opens a local `file://` page containing bundled UI assets and any personal cat file selected for that reminder. It does not contact a website.

@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { defaultConfig, saveConfig } from '../src/config.mjs';
-import { previewReminder, recordActivity } from '../src/engine.mjs';
+import { formatAgentReminder, previewReminder, recordActivity } from '../src/engine.mjs';
 
 async function tempEnv() {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-engine-'));
@@ -74,6 +74,7 @@ test('nap is a first-class previewable preset', async () => {
     assert.equal(payload.id, 'nap');
     assert.match(payload.title, /nap/i);
     assert.match(payload.iconPath, /nap\.svg$/);
+    assert.match(formatAgentReminder(payload), /🌙.*nap/is);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

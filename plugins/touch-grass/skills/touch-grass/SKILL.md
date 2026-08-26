@@ -19,7 +19,9 @@ Common requests:
 - “Add a breathing reminder” → `touch-grass reminders add breathing --title "Breathing break" --message "Take five slow breaths." --icon "◌"`
 - “Use my cat Juniper from this folder” → `touch-grass companions add juniper --name "Juniper" --dir "/absolute/path"`
 - “Rotate my cats” → `touch-grass companions use rotate`
-- “Open the control panel” → `touch-grass settings`
+- “Show my settings” → `touch-grass settings`
+- “Keep reminders inside this agent” → `touch-grass config set delivery agent`
+- “Use the animated local popup” → `touch-grass config set delivery popup`
 - “Show me what the nap reminder looks like” → `touch-grass test nap`
 - “Pause reminders for 30 minutes” → `touch-grass snooze 30`
 
@@ -28,3 +30,5 @@ For a companion folder, accept `.gif`, `.webp`, `.png`, `.jpg`, or `.jpeg` files
 After a change, report the effective setting in plain language. If the user asks what is configured, use `touch-grass status --json`, `touch-grass config get`, `touch-grass reminders list`, or `touch-grass companions list` as appropriate.
 
 Touch Grass is local-only. Do not add network access, upload activity data, or read transcripts to configure it.
+
+Native `agent` delivery is the default. When `touch-grass test <id>` returns a reminder, present that reminder directly to the user. Do not claim that native agent reminders can render animated GIFs. Cat animation is available only in optional `popup` delivery mode.

@@ -1,12 +1,9 @@
 #!/usr/bin/env node
 
-import { spawn } from 'node:child_process';
-import { readdir, readFile, unlink } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   defaultConfig,
-  ensureDataDir,
   getDataPaths,
   loadConfig,
   loadPresets,
@@ -15,11 +12,8 @@ import {
   updateConfig,
   updateState
 } from '../src/config.mjs';
-import { availableReminders, previewReminder, recordActivity, statusSnapshot } from '../src/engine.mjs';
-import { launchBrowser, launchReminder, resolveReminderCommand } from '../src/launcher.mjs';
-import { runSettingsServer } from '../src/settings-server.mjs';
-
-const CLI_PATH = fileURLToPath(import.meta.url);
+import { availableReminders, formatAgentReminder, previewReminder, recordActivity, statusSnapshot } from '../src/engine.mjs';
+import { launchReminder, resolveReminderCommand } from '../src/launcher.mjs';
 
 function parseArgs(tokens) {
   const positionals = [];
@@ -56,34 +50,6 @@ async function readStdin() {
   return input.trim() ? JSON.parse(input) : {};
 }
 
-async function openSettings({ noOpen = false } = {}) {
-  const paths = await ensureDataDir();
-  try {
-    const info = JSON.parse(await readFile(paths.settingsServer, 'utf8'));
-    const response = await fetch(`http://127.0.0.1:${info.port}/api/snapshot`, {
-      headers: { 'X-Touch-Grass-Token': info.token },
-      signal: AbortSignal.timeout(700)
-    });
-    if (response.ok) {
-      const url = `http://127.0.0.1:${info.port}/?token=${encodeURIComponent(info.token)}`;
-      if (!noOpen) launchBrowser(url);
-      print(noOpen ? url : 'Opened Touch Grass settings.');
-      return;
-    }
-  } catch {
-    await unlink(paths.settingsServer).catch(() => {});
-  }
-
-  const child = spawn(process.execPath, [CLI_PATH, 'settings-server'], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true,
-    env: { ...process.env, TOUCH_GRASS_SETTINGS_OPEN: noOpen ? '0' : '1' }
-  });
-  child.unref();
-  print(noOpen ? 'Touch Grass settings server is starting.' : 'Opening Touch Grass settings.');
-}
-
 async function setConfigValue(key, rawValue) {
   const aliases = {
     interval: 'intervalMinutes',
@@ -96,6 +62,7 @@ async function setConfigValue(key, rawValue) {
     else if (['intervalMinutes', 'idleResetMinutes', 'reminderDurationSeconds'].includes(canonical)) {
       current[canonical] = Number(rawValue);
     } else if (canonical === 'order') current.order = rawValue;
+    else if (canonical === 'delivery') current.delivery = rawValue;
     else if (canonical === 'companion') current.companion = rawValue;
     else if (canonical === 'quiet-hours') {
       if (String(rawValue).toLowerCase() === 'off') current.quietHours.enabled = false;
@@ -219,15 +186,32 @@ async function doctor() {
   });
 }
 
+async function showSettings() {
+  const config = await loadConfig();
+  const reminders = await availableReminders(config);
+  print(`Touch Grass settings (stored only on this computer)
+
+Delivery: ${config.delivery === 'agent' ? 'inside Codex / Claude Code' : 'local popup window'}
+Reminder interval: ${config.intervalMinutes} active minutes
+Idle reset: ${config.idleResetMinutes} minutes
+Reminder duration: ${config.reminderDurationSeconds} seconds
+Order: ${config.order}
+Quiet hours: ${config.quietHours.enabled ? `${config.quietHours.start}-${config.quietHours.end}` : 'off'}
+Enabled reminders: ${reminders.map((item) => item.id).join(', ') || 'none'}
+Companion: ${config.companion}
+
+Ask your agent to change any of these settings, or run touch-grass config get for JSON.`);
+}
+
 function help() {
   print(`Touch Grass — local break reminders for agent sessions
 
 Usage:
   touch-grass status [--json]
-  touch-grass settings [--no-open]
+  touch-grass settings
   touch-grass test [reminder-id] [--dry-run]
   touch-grass config get
-  touch-grass config set <interval|idle-reset|duration|order|companion|quiet-hours|enabled> <value>
+  touch-grass config set <interval|idle-reset|duration|delivery|order|companion|quiet-hours|enabled> <value>
   touch-grass reminders list
   touch-grass reminders enable|disable <id>
   touch-grass reminders add <id> --title "..." --message "..." [--icon "..."] [--gif /path/file.gif]
@@ -248,18 +232,17 @@ async function main() {
   if (command === 'hook') {
     try {
       const result = await recordActivity(await readStdin());
-      if (result.due) launchReminder(result.payload);
+      if (result.due) {
+        if (result.config.delivery === 'popup') launchReminder(result.payload);
+        else print({ systemMessage: formatAgentReminder(result.payload) });
+      }
     } catch (error) {
       if (process.env.TOUCH_GRASS_DEBUG === '1') process.stderr.write(`touch-grass: ${error.message}\n`);
     }
     return;
   }
-  if (command === 'settings-server') {
-    await runSettingsServer({ openBrowser: process.env.TOUCH_GRASS_SETTINGS_OPEN !== '0' });
-    return;
-  }
   if (command === 'settings') {
-    await openSettings({ noOpen: flags['no-open'] === true });
+    await showSettings();
     return;
   }
   if (command === 'status') {
@@ -272,8 +255,15 @@ async function main() {
   }
   if (command === 'test') {
     const payload = await previewReminder(positionals[0] ?? 'water');
-    const result = launchReminder(payload, { dryRun: flags['dry-run'] === true });
-    print(flags['dry-run'] ? { payload, launch: result } : `Opened the ${payload.id} reminder.`);
+    if (flags['dry-run']) {
+      print({ payload, delivery: (await loadConfig()).delivery });
+      return;
+    }
+    const config = await loadConfig();
+    if (config.delivery === 'popup') {
+      launchReminder(payload);
+      print(`Opened the ${payload.id} reminder.`);
+    } else print(formatAgentReminder(payload));
     return;
   }
   if (command === 'config' && positionals[0] === 'get') {

@@ -10,6 +10,7 @@ const PRESETS_PATH = path.join(PLUGIN_ROOT, 'presets.json');
 const DEFAULT_CONFIG = Object.freeze({
   schemaVersion: 1,
   enabled: true,
+  delivery: 'agent',
   intervalMinutes: 50,
   idleResetMinutes: 10,
   reminderDurationSeconds: 18,
@@ -51,8 +52,7 @@ export function getDataPaths(env = process.env) {
     dir,
     config: path.join(dir, 'config.json'),
     state: path.join(dir, 'state.json'),
-    lock: path.join(dir, '.state.lock'),
-    settingsServer: path.join(dir, 'settings-server.json')
+    lock: path.join(dir, '.state.lock')
   };
 }
 
@@ -138,10 +138,13 @@ export function normalizeConfig(input = {}) {
   const quiet = input.quietHours && typeof input.quietHours === 'object' ? input.quietHours : {};
   const order = input.order ?? base.order;
   if (!['shuffle', 'cycle'].includes(order)) throw new Error('order must be shuffle or cycle.');
+  const delivery = input.delivery ?? base.delivery;
+  if (!['agent', 'popup'].includes(delivery)) throw new Error('delivery must be agent or popup.');
 
   const config = {
     schemaVersion: 1,
     enabled: input.enabled ?? base.enabled,
+    delivery,
     intervalMinutes: requireNumber(input.intervalMinutes ?? base.intervalMinutes, 'intervalMinutes', 1, 480),
     idleResetMinutes: requireNumber(input.idleResetMinutes ?? base.idleResetMinutes, 'idleResetMinutes', 1, 180),
     reminderDurationSeconds: requireNumber(input.reminderDurationSeconds ?? base.reminderDurationSeconds, 'reminderDurationSeconds', 5, 120),

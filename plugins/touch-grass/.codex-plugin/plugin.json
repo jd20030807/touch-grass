@@ -14,12 +14,12 @@
   "interface": {
     "displayName": "Touch Grass",
     "shortDescription": "Gentle local break reminders while you code.",
-    "longDescription": "Tracks active agent time locally and opens a small reminder bubble for water, stretching, snacks, walking, eye rest, or a nap.",
+    "longDescription": "Tracks active agent time locally and shows native reminders for water, stretching, snacks, walking, eye rest, or a nap.",
     "developerName": "Touch Grass contributors",
     "category": "Productivity",
     "capabilities": ["Local hooks", "Local settings"],
     "defaultPrompt": [
-      "Open my Touch Grass settings.",
+      "Show my Touch Grass settings.",
       "Remind me to take a break every 45 minutes.",
       "Test the nap reminder."
     ],

@@ -8,6 +8,7 @@ import { defaultConfig, getDataDir, loadConfig, normalizeConfig, saveConfig } fr
 test('config defaults are local-first and include safe timing bounds', () => {
   const config = defaultConfig();
   assert.equal(config.enabled, true);
+  assert.equal(config.delivery, 'agent');
   assert.equal(config.intervalMinutes, 50);
   assert.equal(config.idleResetMinutes, 10);
   assert.equal(config.companion, 'rotate');
@@ -19,6 +20,7 @@ test('TOUCH_GRASS_HOME overrides the platform data directory', () => {
 
 test('config rejects invalid timing and unknown companions', () => {
   assert.throws(() => normalizeConfig({ intervalMinutes: 0 }), /between 1 and 480/);
+  assert.throws(() => normalizeConfig({ delivery: 'cloud' }), /agent or popup/);
   assert.throws(() => normalizeConfig({ companion: 'missing' }), /Unknown companion/);
 });
 

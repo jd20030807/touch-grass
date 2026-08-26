@@ -89,13 +89,3 @@ export function launchReminder(payload, options = {}) {
   launch(command, options.dryRun ?? process.env.TOUCH_GRASS_DRY_RUN === '1');
   return { url, ...command };
 }
-
-export function launchBrowser(url, options = {}) {
-  let command;
-  if (process.platform === 'darwin') command = { executable: '/usr/bin/open', args: [url], mode: 'browser' };
-  else if (process.platform === 'win32') {
-    command = { executable: 'cmd.exe', args: ['/d', '/s', '/c', 'start', '', url], mode: 'browser' };
-  } else command = { executable: 'xdg-open', args: [url], mode: 'browser' };
-  launch(command, options.dryRun ?? process.env.TOUCH_GRASS_DRY_RUN === '1');
-  return command;
-}

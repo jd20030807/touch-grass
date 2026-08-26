@@ -156,12 +156,18 @@ export async function previewReminder(id, options = {}) {
   return toPayload(reminder, companion, config.reminderDurationSeconds);
 }
 
+export function formatAgentReminder(payload) {
+  const icon = payload.iconText ? `${payload.iconText} ` : '';
+  return `🌱 Touch Grass\n${icon}${payload.title}\n${payload.message}`;
+}
+
 export async function statusSnapshot(env = process.env) {
   const config = await loadConfig(env);
   const state = await loadState(env);
   const remainingMs = Math.max(0, config.intervalMinutes * 60_000 - state.activeMs);
   return {
     enabled: config.enabled,
+    delivery: config.delivery,
     intervalMinutes: config.intervalMinutes,
     activeMinutes: Math.round((state.activeMs / 60_000) * 10) / 10,
     remainingMinutes: Math.ceil(remainingMs / 60_000),
