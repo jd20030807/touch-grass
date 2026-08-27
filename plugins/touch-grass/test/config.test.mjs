@@ -14,6 +14,8 @@ test('config defaults are local-first and include safe timing bounds', () => {
   assert.deepEqual(config.reminderSchedules.stretch, { kind: 'active', intervalMinutes: 60 });
   assert.deepEqual(config.reminderSchedules.walk, { kind: 'active', intervalMinutes: 120 });
   assert.deepEqual(config.reminderSchedules.snack.times, ['10:30', '15:30']);
+  assert.deepEqual(config.reminderSchedules.lunch, { kind: 'clock', times: ['12:00'], graceMinutes: 60 });
+  assert.deepEqual(config.reminderSchedules.dinner, { kind: 'clock', times: ['18:00'], graceMinutes: 60 });
   assert.equal(config.reminderSchedules.bedtime.time, '22:00');
   assert.equal(config.reminderSchedules.bedtime.windDownMinutes, 20);
   assert.equal(config.idleResetMinutes, 10);

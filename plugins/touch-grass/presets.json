@@ -23,6 +23,20 @@
       "icon": "snack.svg"
     },
     {
+      "id": "lunch",
+      "title": "Lunch break",
+      "message": "Go eat something real. The bug will still be there when you get back.",
+      "iconText": "\ud83c\udf5c",
+      "icon": "snack.svg"
+    },
+    {
+      "id": "dinner",
+      "title": "Dinner time",
+      "message": "Step away for a proper meal. Evenings go better on a full stomach.",
+      "iconText": "\ud83c\udf72",
+      "icon": "snack.svg"
+    },
+    {
       "id": "walk",
       "title": "Take a tiny lap",
       "message": "Walk around the room. The code can breathe for a minute.",

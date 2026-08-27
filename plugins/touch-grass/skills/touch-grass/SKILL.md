@@ -32,7 +32,7 @@ Common requests:
 - “What can I customize?” → `touch-grass settings`
 - “Pause reminders for 30 minutes” → `touch-grass snooze 30`
 
-For a companion folder, require animated `.gif` or `.webp` files named `water`, `stretch`, `snack`, `walk`, `eyes`, and `bedtime`. All six are required because every reminder must have a matching cat animation. The bedtime animation serves both the wind-down and bedtime stages. Do not invent asset paths; inspect the supplied folder first when needed.
+For a companion folder, require animated `.gif` or `.webp` files named `water`, `stretch`, `snack`, `walk`, `eyes`, and `bedtime`. Those six cover every reminder: the bedtime animation serves both the wind-down and bedtime stages, and the snack animation covers lunch and dinner unless the folder also has `lunch` and `dinner` files of its own. Do not invent asset paths; inspect the supplied folder first when needed.
 
 After a change, acknowledge the outcome naturally rather than reporting a setting mutation. Good responses include:
 

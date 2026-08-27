@@ -1,6 +1,6 @@
 {
   "name": "touch-grass",
-  "version": "0.1.2+codex.20260827082638",
+  "version": "0.1.3+codex.20260827091541",
   "description": "Local cat-GIF popup reminders for long vibe-coding sessions.",
   "author": {
     "name": "Touch Grass contributors",
@@ -9,12 +9,7 @@
   "homepage": "https://github.com/jd20030807/touch-grass#readme",
   "repository": "https://github.com/jd20030807/touch-grass",
   "license": "MIT",
-  "keywords": [
-    "wellness",
-    "breaks",
-    "local-first",
-    "vibe-coding"
-  ],
+  "keywords": ["wellness", "breaks", "local-first", "vibe-coding"],
   "skills": "./skills/",
   "interface": {
     "displayName": "Touch Grass",

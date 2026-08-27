@@ -63,7 +63,7 @@ test('hook frequency alone never advances reminder clocks', async () => {
   const { directory, env } = await tempEnv();
   try {
     const config = defaultConfig();
-    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'bedtime'];
+    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'bedtime', 'lunch', 'dinner'];
     config.reminderSchedules.eyes.intervalMinutes = 1;
     await saveConfig(config, env);
     const base = localTime(12);
@@ -85,7 +85,7 @@ test('each active reminder consumes its own aggregate presence clock', async () 
   const { directory, env } = await tempEnv();
   try {
     const config = defaultConfig();
-    config.disabledPresetIds = ['stretch', 'snack', 'walk', 'bedtime'];
+    config.disabledPresetIds = ['stretch', 'snack', 'walk', 'bedtime', 'lunch', 'dinner'];
     await saveConfig(config, env);
     const base = localTime(12);
 
@@ -114,7 +114,7 @@ test('a new presence stretch restarts every activity-based clock', async () => {
   const { directory, env } = await tempEnv();
   try {
     const config = defaultConfig();
-    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'bedtime'];
+    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'bedtime', 'lunch', 'dinner'];
     await saveConfig(config, env);
     const base = localTime(12);
 
@@ -137,7 +137,7 @@ test('stale presence is ignored instead of falling back to hook gaps', async () 
   const { directory, env } = await tempEnv();
   try {
     const config = defaultConfig();
-    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'bedtime'];
+    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'bedtime', 'lunch', 'dinner'];
     await saveConfig(config, env);
     const nowMs = localTime(12);
     await writePresence(env, nowMs, {
@@ -157,7 +157,7 @@ test('clock reminders wait until the user is present in the coding app', async (
   const { directory, env } = await tempEnv();
   try {
     const config = defaultConfig();
-    config.disabledPresetIds = ['water', 'stretch', 'walk', 'eyes', 'bedtime'];
+    config.disabledPresetIds = ['water', 'stretch', 'walk', 'eyes', 'bedtime', 'lunch', 'dinner'];
     await saveConfig(config, env);
 
     await writePresence(env, localTime(10, 30), { engaged: false });
@@ -180,7 +180,7 @@ test('bedtime is a two-stage wind-down and bedtime reminder while present', asyn
   const { directory, env } = await tempEnv();
   try {
     const config = defaultConfig();
-    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'eyes'];
+    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'eyes', 'lunch', 'dinner'];
     config.reminderSchedules.bedtime.windDownMinutes = 30;
     await saveConfig(config, env);
 
@@ -205,7 +205,7 @@ test('quiet hours suppress an otherwise due presence reminder', async () => {
   const { directory, env } = await tempEnv();
   try {
     const config = defaultConfig();
-    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'bedtime'];
+    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'bedtime', 'lunch', 'dinner'];
     config.reminderSchedules.eyes.intervalMinutes = 5;
     config.quietHours = { enabled: true, start: '00:00', end: '00:00' };
     await saveConfig(config, env);

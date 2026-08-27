@@ -232,6 +232,15 @@ async function removeReminder(rawId) {
   print(`Okay — I won't use the ${reminderPhrase(id)} reminder anymore.`);
 }
 
+// Actions a pack may satisfy with art it already has, so adding a built-in
+// reminder never invalidates cat packs people already made. The bundled packs
+// reuse their snack animation for lunch and dinner the same way.
+const COMPANION_ASSET_ALIASES = Object.freeze({
+  bedtime: Object.freeze(['nap']),
+  lunch: Object.freeze(['snack']),
+  dinner: Object.freeze(['snack'])
+});
+
 async function addCompanion(id, flags) {
   if (!flags.dir) throw new Error('companions add requires --dir /path/to/assets.');
   const directory = path.resolve(flags.dir);
@@ -243,7 +252,7 @@ async function addCompanion(id, flags) {
   for (const reminder of presets.reminders) {
     const candidates = extensions.flatMap((ext) => [
       `${reminder.id}.${ext}`,
-      ...(reminder.id === 'bedtime' ? [`nap.${ext}`] : [])
+      ...(COMPANION_ASSET_ALIASES[reminder.id] ?? []).map((alias) => `${alias}.${ext}`)
     ]);
     const filename = candidates.find((candidate) => files.has(candidate));
     if (filename) assets[reminder.id] = path.join(directory, filename);

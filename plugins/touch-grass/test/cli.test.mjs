@@ -142,7 +142,26 @@ test('wind-down previews use the bedtime asset and a temporary companion overrid
   }
 });
 
-test('cat packs require all six animated actions including bedtime', async () => {
+test('a six-file cat pack still completes, reusing snack art for lunch and dinner', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  const catDir = path.join(home, 'juniper');
+  try {
+    await mkdir(catDir);
+    for (const action of ['water', 'stretch', 'snack', 'walk', 'eyes', 'bedtime']) {
+      await writeFile(path.join(catDir, `${action}.gif`), 'GIF89a');
+    }
+    const added = run(['companions', 'add', 'juniper', '--name', 'Juniper', '--dir', catDir], home);
+    assert.equal(added.status, 0, added.stderr);
+    const listed = JSON.parse(run(['companions', 'list'], home).stdout);
+    const juniper = listed.companions.find((item) => item.id === 'juniper');
+    assert.equal(juniper.assets.lunch, path.join(catDir, 'snack.gif'));
+    assert.equal(juniper.assets.dinner, path.join(catDir, 'snack.gif'));
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('cat packs require all eight animated actions including bedtime', async () => {
   const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
   const catDir = path.join(home, 'mochi');
   try {
@@ -150,7 +169,7 @@ test('cat packs require all six animated actions including bedtime', async () =>
     await writeFile(path.join(catDir, 'water.gif'), 'GIF89a');
     const result = run(['companions', 'add', 'mochi', '--name', 'Mochi', '--dir', catDir], home);
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /stretch, snack, walk, eyes, bedtime/);
+    assert.match(result.stderr, /stretch, snack, lunch, dinner, walk, eyes, bedtime/);
   } finally {
     await rm(home, { recursive: true, force: true });
   }

@@ -80,7 +80,7 @@ test('Nian and You ship as complete transparent animated companion packs', async
     'utf8'
   ));
   assert.deepEqual(manifest.companions.map((item) => item.id), ['nian', 'you']);
-  const actions = ['water', 'stretch', 'snack', 'walk', 'eyes', 'bedtime'];
+  const actions = ['water', 'stretch', 'snack', 'lunch', 'dinner', 'walk', 'eyes', 'bedtime'];
 
   for (const companion of manifest.companions) {
     assert.deepEqual(Object.keys(companion.assets), actions);

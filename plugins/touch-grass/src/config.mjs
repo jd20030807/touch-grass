@@ -15,6 +15,8 @@ export const DEFAULT_REMINDER_SCHEDULES = Object.freeze({
   stretch: Object.freeze({ kind: 'active', intervalMinutes: 60 }),
   walk: Object.freeze({ kind: 'active', intervalMinutes: 120 }),
   snack: Object.freeze({ kind: 'clock', times: Object.freeze(['10:30', '15:30']), graceMinutes: 60 }),
+  lunch: Object.freeze({ kind: 'clock', times: Object.freeze(['12:00']), graceMinutes: 60 }),
+  dinner: Object.freeze({ kind: 'clock', times: Object.freeze(['18:00']), graceMinutes: 60 }),
   bedtime: Object.freeze({ kind: 'bedtime', time: '22:00', windDownMinutes: 20, graceMinutes: 120 })
 });
 

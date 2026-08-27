@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 - 2026-08-27
+
+- Add lunch and dinner as built-in reminders, at noon and 6 PM by default
+- Reuse each companion's snack animation for both new reminders, so existing cat packs stay complete
+- Accept `lunch` and `dinner` files in a custom cat pack when you want them to have their own art
+
 ## 0.1.2 - 2026-08-27
 
 - Reclaim the shared schedule lock as soon as a killed hook could have left it behind, so a rare mid-write kill no longer blocks Codex and Claude Code reminders for ten seconds

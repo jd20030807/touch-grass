@@ -25,6 +25,7 @@ It starts with a balanced routine:
 - Stretch every hour
 - Take a short walk every two hours
 - Get a snack at 10:30 AM and 3:30 PM
+- Eat lunch at noon and dinner at 6 PM
 - Wind down at 9:40 PM and head to bed at 10 PM
 
 Each reminder has its own schedule, so you can change one without affecting the others. Everything stays on your Mac.
@@ -80,7 +81,7 @@ Use my dog Mochi from /absolute/path/to/mochi.
 Rotate between my companions.
 ```
 
-A complete companion needs one animation for each built-in action: water, eye rest, stretching, walking, snacking, and bedtime. GIF and animated WebP files are supported. If anything is missing, your agent can help you finish the set.
+A complete companion needs one animation for each built-in action: water, eye rest, stretching, walking, snacking, and bedtime. Name the files after the actions and Touch Grass matches them up for you — lunch and dinner reuse your snacking animation unless you add your own. GIF and animated WebP files are supported. If anything is missing, your agent can help you finish the set.
 
 You can also create a new kind of reminder in plain language:
 
