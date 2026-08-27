@@ -186,6 +186,49 @@ test('spoken output never prints the absolute home directory', async () => {
   }
 });
 
+test('a hidden bundled cat can be brought back by name', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  try {
+    const hidden = run(['companions', 'remove', 'nian'], home);
+    assert.equal(hidden.status, 0, hidden.stderr);
+    assert.match(hidden.stdout, /removed Nian/, 'the cat should be named, not identified by id');
+
+    const back = run(['companions', 'use', 'nian'], home);
+    assert.equal(back.status, 0, back.stderr);
+    assert.match(back.stdout, /Nian will bring your reminders/, 'the cat is named, not identified by id');
+    const listed = JSON.parse(run(['companions', 'list'], home).stdout);
+    assert.equal(listed.selected, 'nian');
+
+    // the other door: companions add with a bundled id and no --dir
+    assert.equal(run(['companions', 'remove', 'nian'], home).status, 0);
+    const readded = run(['companions', 'add', 'nian'], home);
+    assert.equal(readded.status, 0, readded.stderr);
+    assert.match(readded.stdout, /Nian is back/i);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('a helper too old to report its version is flagged, not passed as healthy', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  const bridge = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-bridge-'));
+  try {
+    await writeFile(
+      path.join(bridge, 'helper.json'),
+      JSON.stringify({ pid: 1, updatedAt: new Date().toISOString() })
+    );
+    const report = JSON.parse(run(['doctor'], home, { TOUCH_GRASS_BRIDGE_DIR: bridge }).stdout);
+    assert.equal(report.popupReady, true, 'the fake heartbeat should read as running');
+    assert.equal(report.helperVersion, null);
+    assert.equal(report.helperVersionMatches, false, 'a version-less helper predates the handshake');
+    assert.equal(report.ok, false);
+    assert.match(report.helperUpgradeHint, /rebuild/i);
+  } finally {
+    await rm(bridge, { recursive: true, force: true });
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
 test('doctor abbreviates the home directory instead of naming the user', async () => {
   const home = await mkdtemp(path.join(os.homedir(), '.touch-grass-doctor-'));
   try {

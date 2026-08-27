@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.9 - 2026-08-27
+
+- Bring a hidden bundled cat back by choosing her again, instead of leaving no way back short of resetting everything
+- Call companions by name in every message, rather than by their lowercase id
+- Show only the cats still in rotation on reminders that have no animation of their own
+- Treat a companion too old to report its build as out of date in health checks, instead of quietly passing
+- Count coding time in JetBrains IDEs, Android Studio, Kitty, Hyper, and Tabby
+- Add `npm run uninstall:macos-helper` and an Uninstall section, since the companion now restarts itself and cannot simply be quit
+- Note that updates apply to new conversations
+
 ## 0.1.8 - 2026-08-27
 
 - Write the data folder as `~/.touch-grass` in health checks, so sharing one does not reveal your account name; a folder outside your home is still shown in full so it can be fixed

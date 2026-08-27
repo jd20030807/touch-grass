@@ -42,10 +42,19 @@ private enum PresenceDetector {
         "org.alacritty",
         "io.alacritty",
         "com.mitchellh.ghostty",
+        "net.kovidgoyal.kitty",
+        "co.zeit.hyper",
+        "org.tabby",
         "dev.zed.zed",
         "dev.zed.zed-preview",
-        "dev.zed.zed-dev"
+        "dev.zed.zed-dev",
+        "com.google.android.studio"
     ]
+
+    // Claude Code ships a JetBrains plugin, and JetBrains uses one reverse-DNS
+    // vendor prefix across every IDE. Anchoring on the vendor keeps this precise
+    // — unlike the substring matching this replaced — without naming each product.
+    private static let ideVendorPrefixes = ["com.jetbrains."]
 
     static func foregroundMatches(_ hosts: Set<String>) -> Bool {
         guard !hosts.isEmpty, let application = NSWorkspace.shared.frontmostApplication else { return false }
@@ -57,6 +66,7 @@ private enum PresenceDetector {
         // Claude Code are commonly run from one, and the lease already says
         // which of them is live.
         let isTerminalHost = terminalBundleIdentifiers.contains(bundleIdentifier)
+            || ideVendorPrefixes.contains { bundleIdentifier.hasPrefix($0) }
 
         if hosts.contains("codex") && (isCodexDesktop || isTerminalHost) { return true }
         if hosts.contains("claude-code") && (isClaudeDesktop || isTerminalHost) { return true }

@@ -63,7 +63,18 @@ npm run install:macos-helper
 claude plugin marketplace update touch-grass && claude plugin update touch-grass@touch-grass
 ```
 
-The last step is for Claude Code; for Codex it is `codex plugin marketplace add "$HOME/.local/share/touch-grass/repository"` followed by `codex plugin add touch-grass@touch-grass`. Rebuilding the companion matters as much as updating the plugin — they are two halves of the same release. If you ever suspect they have drifted apart, ask "is Touch Grass healthy?" and your agent will check.
+The last step is for Claude Code; for Codex it is `codex plugin marketplace add "$HOME/.local/share/touch-grass/repository"` followed by `codex plugin add touch-grass@touch-grass`. Rebuilding the companion matters as much as updating the plugin — they are two halves of the same release. Start a new conversation afterwards, since an open one keeps the version it started with. If you ever suspect the two have drifted apart, ask "is Touch Grass healthy?" and your agent will check.
+
+## Uninstall
+
+Touch Grass keeps its companion running in the background, so removing it takes one command:
+
+```bash
+cd ~/.local/share/touch-grass/repository
+npm run uninstall:macos-helper
+```
+
+That stops the companion, removes it from your login items, and deletes the app. Then remove the plugin with `claude plugin uninstall touch-grass@touch-grass` (or `codex plugin remove touch-grass@touch-grass`). Your reminder preferences live in `~/.touch-grass`; delete that folder if you want them gone too, or leave it and everything is waiting if you come back.
 
 ## Make it yours
 

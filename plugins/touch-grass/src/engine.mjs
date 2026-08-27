@@ -99,20 +99,26 @@ function chooseCompanion(companions, config, random = Math.random) {
 // close together and it is the reminder least worth postponing.
 const MINIMUM_REMINDER_GAP_MS = 5 * 60_000;
 
-async function pairArtIfAvailable() {
+// Portraits of the cats still in rotation. A user who hid Nian should not meet
+// her again on reminders that have no animation of their own.
+async function fallbackPortraits(config) {
   const present = [];
-  for (const artPath of COMPANION_PAIR_ART) {
+  for (const companion of (await availableCompanions(config)).filter((item) => item.bundled)) {
+    const artPath = path.join(PLUGIN_ROOT, 'assets', 'welcome', `${companion.id}.png`);
     if (await pathExists(artPath)) present.push(artPath);
   }
-  return present.length >= 2 ? present : [];
+  return present;
 }
 
-async function toPayload(reminder, companion, durationSeconds, presentation = {}) {
+async function toPayload(reminder, companion, durationSeconds, presentation = {}, config = null) {
   const assetAction = presentation.assetAction ?? reminder.id;
   let assetPath = reminder.assetPath ?? null;
   if (companion?.assets?.[assetAction]) assetPath = companion.assets[assetAction];
   if (assetPath && !(await pathExists(assetPath))) assetPath = null;
-  const pairArt = assetPath ? [] : await pairArtIfAvailable();
+  const portraits = assetPath || !config ? [] : await fallbackPortraits(config);
+  // Two portraits use the pair layout; a lone remaining cat still gets shown.
+  const pairArt = portraits.length >= 2 ? portraits.slice(0, 2) : [];
+  if (!assetPath && pairArt.length === 0 && portraits.length === 1) assetPath = portraits[0];
   return {
     ...(pairArt.length > 0 ? { assetPaths: pairArt } : {}),
     id: assetAction,
@@ -332,7 +338,7 @@ export async function recordActivity(input = {}, options = {}) {
     }
     const companions = await availableCompanions(config);
     const companion = chooseCompanion(companions, config, options.random ?? Math.random);
-    const payload = await toPayload(reminder, companion, config.reminderDurationSeconds, candidate.presentation);
+    const payload = await toPayload(reminder, companion, config.reminderDurationSeconds, candidate.presentation, config);
 
     // Show the banner before recording it as delivered. If the popup companion
     // is not running — after a restart, say — the reminder stays due instead of
@@ -402,7 +408,7 @@ export async function previewReminder(id, options = {}) {
       message: reminder.stages?.bedtime?.message
     };
   }
-  return toPayload(reminder, companion, config.reminderDurationSeconds, presentation);
+  return toPayload(reminder, companion, config.reminderDurationSeconds, presentation, config);
 }
 
 export async function statusSnapshot(env = process.env, nowMs = Date.now()) {

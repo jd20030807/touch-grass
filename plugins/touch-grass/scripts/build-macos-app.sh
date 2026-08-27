@@ -14,10 +14,14 @@ mkdir -p "$binary_dir" "$cache_dir"
 cp "$source_dir/Info.plist" "$contents_dir/Info.plist"
 
 # Stamp the plugin's version so the helper can report which build is running.
-plugin_version=$(node -p "require('$plugin_root/.claude-plugin/plugin.json').version" 2>/dev/null || echo "")
-if [ -n "$plugin_version" ]; then
-  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $plugin_version" "$contents_dir/Info.plist" >/dev/null 2>&1 || true
+# Fail loudly rather than shipping a helper that misreports its own build:
+# doctor compares this value to decide whether the companion needs rebuilding.
+plugin_version=$(node -p "require('$plugin_root/.claude-plugin/plugin.json').version")
+if [ -z "$plugin_version" ]; then
+  printf '%s\n' 'Could not read the plugin version; refusing to build an unstamped helper.' >&2
+  exit 1
 fi
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $plugin_version" "$contents_dir/Info.plist"
 swiftc \
   -parse-as-library \
   -module-cache-path "$cache_dir" \

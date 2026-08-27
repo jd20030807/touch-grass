@@ -33,6 +33,7 @@ Common requests:
 - “What can I customize?” → `touch-grass settings`
 - “Pause reminders for 30 minutes” → `touch-grass snooze 30`
 - “Don't use Nian” / “only show my own cat” → `touch-grass companions remove nian` (bundled cats are hidden, not deleted)
+- “Bring Nian back” → `touch-grass companions use nian`, or `touch-grass companions add nian` with no `--dir`. A hidden bundled cat is never gone; do not ask the user for animation files to restore one.
 
 When the user says reminders have stopped, are not appearing, or seem broken, run `touch-grass doctor` first. If `popupReady` is false, tell them the reminder companion is not running and to open “Touch Grass.app”. If `helperVersionMatches` is false, tell them the companion is an older build and needs rebuilding with `npm run install:macos-helper`. Do not guess at causes before running it.
 

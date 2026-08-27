@@ -1,6 +1,6 @@
 {
   "name": "touch-grass-repository",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "private": true,
   "description": "Local cat-GIF popup reminders for Codex and Claude Code.",
   "type": "module",
@@ -10,7 +10,8 @@
     "doctor": "node plugins/touch-grass/bin/touch-grass.mjs doctor",
     "demo": "TOUCH_GRASS_DRY_RUN=1 node plugins/touch-grass/bin/touch-grass.mjs test bedtime",
     "build:macos-helper": "sh plugins/touch-grass/scripts/build-macos-app.sh",
-    "install:macos-helper": "sh plugins/touch-grass/scripts/install-macos-app.sh"
+    "install:macos-helper": "sh plugins/touch-grass/scripts/install-macos-app.sh",
+    "uninstall:macos-helper": "sh plugins/touch-grass/scripts/uninstall-macos-app.sh"
   },
   "engines": {
     "node": ">=18"

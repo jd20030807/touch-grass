@@ -84,8 +84,15 @@ async function setConfigValue(key, rawValue) {
     duration: 'reminderDurationSeconds'
   };
   const canonical = aliases[key] ?? key;
+  const bundled = canonical === 'companion' ? await allBundledCompanions() : [];
+  // A hidden bundled cat is still a real cat: choosing her brings her back
+  // rather than dead-ending on "I don't have a companion called nian".
+  const bundledById = new Map(bundled.map((item) => [item.id, item]));
   const knownCompanionIds = canonical === 'companion'
-    ? new Set((await availableCompanions(await loadConfig())).map((item) => item.id))
+    ? new Set([
+      ...(await availableCompanions(await loadConfig())).map((item) => item.id),
+      ...bundledById.keys()
+    ])
     : new Set();
   const config = await updateConfig((current) => {
     if (canonical === 'enabled') current.enabled = boolValue(rawValue);
@@ -95,6 +102,10 @@ async function setConfigValue(key, rawValue) {
     else if (canonical === 'companion') {
       if (String(rawValue) !== 'rotate' && !knownCompanionIds.has(String(rawValue))) {
         throw new Error(`I don't have a companion called ${rawValue}. Add it first with companions add.`);
+      }
+      if (bundledById.has(String(rawValue))) {
+        current.hiddenCompanionIds = (current.hiddenCompanionIds ?? [])
+          .filter((item) => item !== String(rawValue));
       }
       current.companion = rawValue;
     }
@@ -117,9 +128,11 @@ async function setConfigValue(key, rawValue) {
   } else if (canonical === 'enabled') {
     print(config.enabled ? 'Touch Grass is back on.' : 'Okay — Touch Grass is paused for now.');
   } else if (canonical === 'companion') {
+    // Say her name. The id is lowercase and reads badly in a sentence.
+    const chosen = (await availableCompanions(config)).find((item) => item.id === config.companion);
     print(config.companion === 'rotate'
       ? `Okay — I'll choose a companion at random for each reminder.`
-      : `Okay — ${config.companion} will bring your reminders.`);
+      : `Okay — ${chosen?.name ?? config.companion} will bring your reminders.`);
   } else print('Okay — I adjusted how Touch Grass notices an active coding stretch.');
 }
 
@@ -271,8 +284,24 @@ function displayPath(value) {
     : value;
 }
 
+async function allBundledCompanions() {
+  return (await availableCompanions({ companions: [], hiddenCompanionIds: [] }))
+    .filter((item) => item.bundled);
+}
+
 async function addCompanion(id, flags) {
-  if (!flags.dir) throw new Error('companions add requires --dir /path/to/assets.');
+  if (!flags.dir) {
+    const bundled = (await allBundledCompanions()).find((item) => item.id === id);
+    if (bundled) {
+      await updateConfig((current) => {
+        current.hiddenCompanionIds = (current.hiddenCompanionIds ?? []).filter((item) => item !== id);
+        return current;
+      });
+      print(`Okay — ${bundled.name} is back in the cat rotation.`);
+      return;
+    }
+    throw new Error('companions add requires --dir /path/to/assets.');
+  }
   const directory = path.resolve(flags.dir);
   if (!(await pathExists(directory))) throw new Error(`Directory does not exist: ${directory}`);
   const files = new Set(await readdir(directory));
@@ -308,12 +337,9 @@ async function addCompanion(id, flags) {
 }
 
 async function removeCompanion(id) {
-  const bundledIds = new Set(
-    (await availableCompanions({ companions: [], hiddenCompanionIds: [] }))
-      .filter((item) => item.bundled)
-      .map((item) => item.id)
-  );
-  let removedName = id;
+  const bundledCompanions = await allBundledCompanions();
+  const bundledIds = new Set(bundledCompanions.map((item) => item.id));
+  let removedName = bundledCompanions.find((item) => item.id === id)?.name ?? id;
   await updateConfig((current) => {
     // A bundled cat cannot be deleted from disk, so hide it instead of
     // reporting that it was never there.
@@ -322,7 +348,6 @@ async function removeCompanion(id) {
       if (remaining.length === 0 && current.companions.length === 0) {
         throw new Error('That is the last companion left. Add one of your own before hiding this one.');
       }
-      removedName = id;
       current.hiddenCompanionIds = [...new Set([...(current.hiddenCompanionIds ?? []), id])];
       if (current.companion === id) current.companion = 'rotate';
       return current;
@@ -365,9 +390,10 @@ async function doctor() {
   ).version;
   const helperVersion = launch?.helperVersion ?? null;
   // A plugin update does not rebuild the native companion, so the two can drift.
-  const helperVersionMatches = !popupReady || helperVersion === null
-    ? null
-    : helperVersion === pluginVersion;
+  // A running helper that reports no version at all predates the handshake, and
+  // is therefore older than the plugin by definition — exactly the case this
+  // check exists to catch, so it must not read as healthy.
+  const helperVersionMatches = !popupReady ? null : helperVersion === pluginVersion;
 
   print({
     ok: reminders.length > 0 && bundledCatPacksReady && popupReady && helperVersionMatches !== false,

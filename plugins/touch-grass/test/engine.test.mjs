@@ -183,6 +183,35 @@ test('a reminder is kept, not consumed, when the popup companion is not running'
   }
 });
 
+test('fallback art never shows a companion the user hid', async () => {
+  const { directory, env } = await tempEnv();
+  try {
+    const config = defaultConfig();
+    config.customReminders = [{
+      id: 'breathe',
+      title: 'Breathe',
+      message: 'Take five slow breaths.',
+      enabled: true,
+      schedule: { kind: 'active', intervalMinutes: 45 }
+    }];
+    await saveConfig(config, env);
+    const both = await previewReminder('breathe', { env });
+    assert.deepEqual(
+      both.assetPaths.map((item) => path.basename(item)),
+      ['nian.png', 'yuzu.png']
+    );
+
+    const hiddenConfig = { ...config, hiddenCompanionIds: ['nian'] };
+    await saveConfig(hiddenConfig, env);
+    const one = await previewReminder('breathe', { env });
+    assert.equal(one.assetPaths, undefined, 'one remaining cat cannot use the pair layout');
+    assert.equal(path.basename(one.assetPath), 'yuzu.png');
+    assert.equal(one.artPending, false);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('a new presence stretch restarts every activity-based clock', async () => {
   const { directory, env } = await tempEnv();
   try {
