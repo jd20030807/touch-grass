@@ -13,7 +13,7 @@ Touch Grass notices sustained, user-present coding time, then opens a notificati
 There is no settings website. People customize it by talking to Codex or Claude Code, and the agent answers in ordinary language. The plugin, preferences, timing data, banner, and cat files all stay on the computer.
 
 > [!IMPORTANT]
-> Touch Grass now includes two complete animated companions based on the project's real-life model cats. Each has matching eight-frame water, stretch, snack, walk-cue, eye-rest, and bedtime GIFs, and the default `rotate` mode makes an independent random choice for each reminder.
+> Touch Grass includes two complete animated companions. Each has matching eight-frame water, stretch, snack, walk-cue, eye-rest, and bedtime GIFs, and the default rotation makes an independent random choice for each reminder.
 
 ## What works now
 
@@ -27,7 +27,21 @@ There is no settings website. People customize it by talking to Codex or Claude 
 - Importing personal cats from a local folder
 - No telemetry, hosted service, API key, or runtime package install
 
-## Test this checkout privately
+## Install from GitHub
+
+In Codex or Claude Code, say:
+
+> Import Touch Grass from https://github.com/jd20030807/touch-grass
+
+The repository-level [IMPORT.md](./IMPORT.md) tells the agent how to keep a stable local checkout, register and install the plugin at user scope, compile and open the native macOS companion, and preserve each host's hook-review step. The agent should not copy Touch Grass into the project you are currently working on.
+
+After installation, start a new Codex task or Claude Code session, review the local Touch Grass hooks, and ask:
+
+> Introduce Touch Grass and tell me how I can personalize it.
+
+Everything after the GitHub download runs locally. Touch Grass does not need a hosted service, account, API key, or network access.
+
+## Test a local checkout
 
 Nothing needs to be published first.
 
@@ -40,11 +54,10 @@ codex plugin marketplace add /absolute/path/to/touch-grass
 codex plugin add touch-grass@touch-grass
 ```
 
-Build and open the native popup companion once:
+Build, install, and open the native popup companion once:
 
 ```bash
-npm run build:macos-helper
-open "plugins/touch-grass/native/macos/dist/Touch Grass.app"
+npm run install:macos-helper
 ```
 
 Keep the companion running, restart Codex, start a new task, and review the local Touch Grass hooks when prompted.
@@ -72,7 +85,7 @@ Remind me to walk around every minute while I test this.
 
 The first request displays the one-time introduction and customization examples. For automatic timing, keep the coding app in front and continue using your keyboard or mouse for at least a minute. A due reminder is delivered on the next agent event. Afterwards, say `Remind me to walk around every two hours again.`
 
-The popup uses the bundled Nian and You animations. The action-icon placeholder appears only if an asset cannot be loaded.
+The popup uses the bundled companion animations. The action-icon placeholder appears only if an asset cannot be loaded.
 
 ## Use it by talking naturally
 
@@ -133,14 +146,6 @@ Claude Desktop contains Chat, Cowork, and Code in one application. Touch Grass r
 
 See [PRIVACY.md](./PRIVACY.md) and [SECURITY.md](./SECURITY.md) for the exact boundaries.
 
-## Install from GitHub after publication
-
-Once this repository is public, someone can tell their agent:
-
-> Import touch-grass from https://github.com/jd20030807/touch-grass
-
-The repository-level [IMPORT.md](./IMPORT.md) tells the agent how to register and install the plugin. Both hosts let users review local hook commands before trusting them.
-
 ## Maintainer commands
 
 Requires Node.js 18 or newer.
@@ -149,6 +154,7 @@ Requires Node.js 18 or newer.
 npm test
 npm run check
 npm run build:macos-helper
+npm run install:macos-helper
 npm run doctor
 TOUCH_GRASS_HOME="$(mktemp -d)" node plugins/touch-grass/bin/touch-grass.mjs test bedtime --dry-run
 ```
@@ -167,12 +173,12 @@ touch-grass snooze 15
 touch-grass doctor
 ```
 
-## Before the first public release
+## Release checks
 
 - Confirm animated GIF/WebP playback in every native popup
 - Run the automated tests and both host plugin validators
 - Review installation from a clean local Codex and Claude Code profile
-- Publish the repository and replace any owner URLs if needed
+- Fresh-clone the published repository and repeat the install flow
 
 ## License
 
