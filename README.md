@@ -90,6 +90,7 @@ Touch Grass runs locally and keeps your preferences on your Mac. It never record
 
 ## Credits
 Default companions, Yuzu and Niangao, developed based on HWZ's real-life, lovely cats <3
+
 Yuzu:
 <img width="3024" height="4032" alt="you" src="https://github.com/user-attachments/assets/9830ea5b-5e66-4b2d-8f8d-a69ec90ca375" />
 
