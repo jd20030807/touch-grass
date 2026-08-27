@@ -72,6 +72,14 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
     private var currentAwayResetMinutes: Double = 10
 
     private let sessionLeaseSeconds: Double = 35 * 60
+    // The "agent" fallback matches any supported terminal or editor, so a lease
+    // from an unknown host that crashed without SessionEnd cleanup should stop
+    // counting presence quickly instead of lingering for the full lease window.
+    private let fallbackHostLeaseSeconds: Double = 5 * 60
+
+    private func leaseLifetime(forHost host: String) -> Double {
+        host == "agent" ? fallbackHostLeaseSeconds : sessionLeaseSeconds
+    }
 
     private let queueDirectory: URL = {
         if let override = ProcessInfo.processInfo.environment["TOUCH_GRASS_BRIDGE_DIR"], !override.isEmpty {
@@ -181,7 +189,7 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
                 let updatedAt = parseDate(lease.updatedAt)
             else { continue }
 
-            if now.timeIntervalSince(updatedAt) > sessionLeaseSeconds {
+            if now.timeIntervalSince(updatedAt) > leaseLifetime(forHost: lease.host.lowercased()) {
                 try? FileManager.default.removeItem(at: leaseURL)
                 continue
             }

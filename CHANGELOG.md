@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 - 2026-08-27
+
+- Reclaim the shared schedule lock as soon as a killed hook could have left it behind, so a rare mid-write kill no longer blocks Codex and Claude Code reminders for ten seconds
+- Label session leases with the app that actually fired the hook, so launching Codex from inside a Claude Code shell (or the reverse) credits presence to the right app
+- Expire unknown-host presence leases after five minutes instead of thirty-five
+- Explain in the README that installing on both Codex and Claude Code shares one schedule with no duplicate popups
+
 ## 0.1.1 - 2026-08-27
 
 - Add a one-time install-success banner featuring both bundled companions in their original static artwork

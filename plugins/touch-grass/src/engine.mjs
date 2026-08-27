@@ -25,8 +25,13 @@ export function isQuietHours(quietHours, now = new Date()) {
 }
 
 export function inferHost(input = {}, env = process.env) {
-  if (env.CLAUDECODE || env.CLAUDE_CODE_ENTRYPOINT || env.CLAUDE_PLUGIN_ROOT) return 'claude-code';
+  // Markers the host sets for this specific hook invocation win over markers
+  // inherited from a parent shell, so Codex launched from a Claude Code Bash
+  // tool (or Claude Code launched from a Codex exec) still labels its lease
+  // with the app that actually fired the hook.
+  if (env.CLAUDE_PLUGIN_ROOT) return 'claude-code';
   if (env.CODEX_THREAD_ID) return 'codex';
+  if (env.CLAUDECODE || env.CLAUDE_CODE_ENTRYPOINT) return 'claude-code';
   return 'agent';
 }
 

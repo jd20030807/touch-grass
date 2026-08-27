@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, utimes, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { defaultConfig, getDataDir, loadConfig, normalizeConfig, saveConfig } from '../src/config.mjs';
+import { defaultConfig, getDataDir, loadConfig, normalizeConfig, saveConfig, withDataLock } from '../src/config.mjs';
 
 test('config defaults are local-first and include safe timing bounds', () => {
   const config = defaultConfig();
@@ -65,6 +65,25 @@ test('config persists valid custom reminders and companions', async () => {
     assert.equal(loaded.customReminders[0].id, 'breathe');
     assert.equal(loaded.customReminders[0].schedule.intervalMinutes, 45);
     assert.equal(loaded.companions[0].name, 'Juniper');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('a lock left behind by a killed hook is reclaimed after the hook timeout', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-lock-'));
+  try {
+    const env = { TOUCH_GRASS_HOME: directory };
+    const lockPath = path.join(directory, '.state.lock');
+    await saveConfig(defaultConfig(), env);
+
+    await writeFile(lockPath, '999999\n', { mode: 0o600 });
+    const stale = new Date(Date.now() - 4_000);
+    await utimes(lockPath, stale, stale);
+    assert.equal(await withDataLock(async () => 'reclaimed', env), 'reclaimed');
+
+    await writeFile(lockPath, '999999\n', { mode: 0o600 });
+    await assert.rejects(withDataLock(async () => 'never', env), /busy/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

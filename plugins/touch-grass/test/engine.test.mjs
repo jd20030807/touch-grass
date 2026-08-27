@@ -48,6 +48,17 @@ test('host inference does not mistake Claude hook model metadata for Codex', () 
   assert.equal(inferHost({ model: 'shared-model-field' }, {}), 'agent');
 });
 
+test('per-invocation host markers beat markers inherited from a parent shell', () => {
+  assert.equal(
+    inferHost({}, { CLAUDECODE: '1', CLAUDE_CODE_ENTRYPOINT: 'cli', CODEX_THREAD_ID: 'thread' }),
+    'codex'
+  );
+  assert.equal(
+    inferHost({}, { CODEX_THREAD_ID: 'thread', CLAUDE_PLUGIN_ROOT: '/plugins/touch-grass' }),
+    'claude-code'
+  );
+});
+
 test('hook frequency alone never advances reminder clocks', async () => {
   const { directory, env } = await tempEnv();
   try {

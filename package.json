@@ -1,6 +1,6 @@
 {
   "name": "touch-grass-repository",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Local cat-GIF popup reminders for Codex and Claude Code.",
   "type": "module",

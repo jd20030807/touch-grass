@@ -355,6 +355,12 @@ export async function saveState(state, env = process.env) {
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Hosts kill hook processes after 3 seconds (hooks/hooks.json timeout), and every
+// lock holder finishes well inside that, so a lock older than the hook timeout was
+// left by a dead process. Reclaiming at the same threshold keeps a mid-write kill
+// from blocking Codex and Claude Code hooks for the previous ten-second window.
+const STALE_LOCK_MS = 3_000;
+
 export async function withDataLock(callback, env = process.env) {
   const paths = await ensureDataDir(env);
   let handle;
@@ -368,7 +374,7 @@ export async function withDataLock(callback, env = process.env) {
       if (error.code !== 'EEXIST') throw error;
       try {
         const lockStat = await stat(paths.lock);
-        if (Date.now() - lockStat.mtimeMs > 10_000) await unlink(paths.lock);
+        if (Date.now() - lockStat.mtimeMs > STALE_LOCK_MS) await unlink(paths.lock);
       } catch (statError) {
         if (statError.code !== 'ENOENT') throw statError;
       }

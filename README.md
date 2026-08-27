@@ -63,6 +63,12 @@ To see your current routine, ask:
 
 > What are my Touch Grass reminders?
 
+## Using Codex and Claude Code together
+
+If you install Touch Grass in both Codex and Claude Code, you don't get two competing reminder systems. Both apps share one schedule on your Mac, so your water, stretch, and eye-rest timers are the same no matter which one you're in, and each reminder pops up exactly once.
+
+Switching between the two also keeps your streak: if you spend twenty minutes in Codex and then move to Claude Code, Touch Grass counts it as one continuous coding stretch instead of starting the clock over. Change a reminder in either app and the other one picks it up automatically.
+
 ## Add your own companion
 
 You can replace the included companions with your own cat, dog, or other character. Put its animations in a folder on your Mac, then tell Codex or Claude Code where to find them:
