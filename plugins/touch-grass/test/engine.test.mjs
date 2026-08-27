@@ -351,8 +351,8 @@ test('rotate mode makes an independent random companion choice for every reminde
     const secondHalf = await previewReminder('water', { env, random: () => 0.8 });
     const repeatedSecondHalf = await previewReminder('water', { env, random: () => 0.8 });
     assert.equal(firstHalf.companionId, 'nian');
-    assert.equal(secondHalf.companionId, 'you');
-    assert.equal(repeatedSecondHalf.companionId, 'you');
+    assert.equal(secondHalf.companionId, 'yuzu');
+    assert.equal(repeatedSecondHalf.companionId, 'yuzu');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

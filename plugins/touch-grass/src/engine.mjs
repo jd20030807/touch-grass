@@ -72,7 +72,13 @@ export async function availableCompanions(config) {
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
   }
-  return [...bundled, ...config.companions];
+  const hidden = new Set(config.hiddenCompanionIds ?? []);
+  const visibleBundled = bundled.filter((item) => !hidden.has(item.id));
+  // Never hide every cat: a reminder with no companion has nothing to show.
+  const usableBundled = visibleBundled.length > 0 || config.companions.length > 0
+    ? visibleBundled
+    : bundled;
+  return [...usableBundled, ...config.companions];
 }
 
 function chooseCompanion(companions, config, random = Math.random) {
@@ -364,7 +370,14 @@ export async function previewReminder(id, options = {}) {
   const isWindDown = windDownAliases.has(id);
   const requestedId = id === 'nap' || isWindDown ? 'bedtime' : id;
   const reminder = reminders.find((item) => item.id === requestedId);
-  if (!reminder) throw new Error(`Reminder ${id} is not available.`);
+  if (!reminder) {
+    const presets = await loadPresets();
+    const known = presets.reminders.some((item) => item.id === requestedId)
+      || config.customReminders.some((item) => item.id === requestedId);
+    throw new Error(known
+      ? `Reminder ${id} is turned off right now. Turn it back on to preview it.`
+      : `Reminder ${id} is not available.`);
+  }
   const companions = await availableCompanions(config);
   const companion = options.companionId
     ? companions.find((item) => item.id === options.companionId)

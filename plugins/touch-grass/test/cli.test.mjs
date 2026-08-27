@@ -61,7 +61,7 @@ test('welcome banner opens once with both approved static companions', async () 
     assert.equal(payload.variant, 'welcome');
     assert.equal(payload.title, 'Touch Grass is here');
     assert.match(payload.message, /break reminders are ready/i);
-    assert.deepEqual(payload.assetUrls.map((url) => path.basename(new URL(url).pathname)), ['nian.png', 'you.png']);
+    assert.deepEqual(payload.assetUrls.map((url) => path.basename(new URL(url).pathname)), ['nian.png', 'yuzu.png']);
 
     const state = JSON.parse(await readFile(path.join(home, 'state.json'), 'utf8'));
     assert.equal(state.welcomeBannerVersion, 1);
@@ -127,7 +127,7 @@ test('a custom reminder without its own animation falls back to both companions'
     assert.equal(payload.artPending, false);
     assert.deepEqual(
       payload.assetPaths.map((item) => path.basename(item)),
-      ['nian.png', 'you.png']
+      ['nian.png', 'yuzu.png']
     );
   } finally {
     await rm(home, { recursive: true, force: true });
@@ -159,6 +159,73 @@ test('moving bedtime keeps a wind-down the user already customized', async () =>
     const replaced = run(['reminders', 'bedtime', '23:30', '--wind-down', '20'], home);
     assert.equal(replaced.status, 0, replaced.stderr);
     assert.match(replaced.stdout, /11:10 PM/);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('choosing a companion that does not exist is refused, not silently ignored', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  try {
+    const bogus = run(['companions', 'use', 'mochi'], home);
+    assert.equal(bogus.status, 1);
+    assert.match(bogus.stderr, /don't have a companion called mochi/i);
+
+    const listed = JSON.parse(run(['companions', 'list'], home).stdout);
+    assert.equal(listed.selected, 'rotate', 'a rejected id must not be saved');
+
+    const real = run(['companions', 'use', 'nian'], home);
+    assert.equal(real.status, 0, real.stderr);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('a bundled cat can be hidden, and the last one cannot', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  try {
+    const hidden = run(['companions', 'remove', 'nian'], home);
+    assert.equal(hidden.status, 0, hidden.stderr);
+    assert.match(hidden.stdout, /removed nian/i);
+
+    const listed = JSON.parse(run(['companions', 'list'], home).stdout);
+    assert.equal(listed.selected, 'rotate');
+
+    const last = run(['companions', 'remove', 'yuzu'], home);
+    assert.equal(last.status, 1, 'hiding every cat must be refused');
+    assert.match(last.stderr, /last companion/i);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('previewing a disabled reminder explains that it is turned off', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  try {
+    assert.equal(run(['reminders', 'disable', 'water'], home).status, 0);
+    const disabled = run(['test', 'water', '--dry-run'], home);
+    assert.equal(disabled.status, 1);
+    assert.match(disabled.stderr, /turned off/i);
+
+    const unknown = run(['test', 'nonsense', '--dry-run'], home);
+    assert.equal(unknown.status, 1);
+    assert.match(unknown.stderr, /not available/i);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('a config naming the retired companion id migrates to Yuzu', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  try {
+    assert.equal(run(['companions', 'use', 'nian'], home).status, 0);
+    const configPath = path.join(home, 'config.json');
+    const raw = JSON.parse(await readFile(configPath, 'utf8'));
+    raw.companion = 'you';
+    await writeFile(configPath, JSON.stringify(raw));
+
+    const listed = JSON.parse(run(['companions', 'list'], home).stdout);
+    assert.equal(listed.selected, 'yuzu');
   } finally {
     await rm(home, { recursive: true, force: true });
   }

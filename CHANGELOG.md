@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.6 - 2026-08-27
+
+- Count coding time when Codex runs in a terminal, not only in the Codex desktop app
+- Rename the second bundled cat from “You” to Yuzu, so the product stops talking about “you” when it means the cat; existing preferences migrate automatically
+- Refuse an unknown companion name instead of confirming it and quietly showing a bundled cat
+- Let a bundled cat be hidden with `companions remove`, and refuse to hide the last one
+- Say when a reminder cannot be previewed because it is turned off
+- Report the companion's build in `doctor` and flag when it is older than the plugin
+- Match coding apps by exact identifier, so unrelated apps are no longer mistaken for editors
+- Only open Touch Grass's own banner page, and stop granting the banner read access to the whole disk
+- Document prerequisites and how to update
+
 ## 0.1.5 - 2026-08-27
 
 - Keep the popup companion running across restarts by registering it as a login agent, so reminders no longer stop for good after the first reboot

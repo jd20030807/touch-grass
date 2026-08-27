@@ -32,6 +32,9 @@ Common requests:
 - “Rotate my cats” → `touch-grass companions use rotate`
 - “What can I customize?” → `touch-grass settings`
 - “Pause reminders for 30 minutes” → `touch-grass snooze 30`
+- “Don't use Nian” / “only show my own cat” → `touch-grass companions remove nian` (bundled cats are hidden, not deleted)
+
+When the user says reminders have stopped, are not appearing, or seem broken, run `touch-grass doctor` first. If `popupReady` is false, tell them the reminder companion is not running and to open “Touch Grass.app”. If `helperVersionMatches` is false, tell them the companion is an older build and needs rebuilding with `npm run install:macos-helper`. Do not guess at causes before running it.
 
 When the user does not dictate the exact banner wording, write `--title` and `--message` yourself in the voice of the built-in reminders: a short plain title, then one warm sentence that says what to do. Read `presets.json` for the house voice rather than inventing a new one, and keep the user's own words when they supplied them.
 

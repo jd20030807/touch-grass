@@ -12,6 +12,12 @@ cache_dir="${TMPDIR:-/tmp}/touch-grass-swift-cache"
 
 mkdir -p "$binary_dir" "$cache_dir"
 cp "$source_dir/Info.plist" "$contents_dir/Info.plist"
+
+# Stamp the plugin's version so the helper can report which build is running.
+plugin_version=$(node -p "require('$plugin_root/.claude-plugin/plugin.json').version" 2>/dev/null || echo "")
+if [ -n "$plugin_version" ]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $plugin_version" "$contents_dir/Info.plist" >/dev/null 2>&1 || true
+fi
 swiftc \
   -parse-as-library \
   -module-cache-path "$cache_dir" \

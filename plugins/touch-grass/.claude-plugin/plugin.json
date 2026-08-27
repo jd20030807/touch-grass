@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "touch-grass",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Local cat-GIF break reminder banners for long vibe-coding sessions.",
   "author": {
     "name": "Touch Grass contributors",

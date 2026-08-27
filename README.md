@@ -32,6 +32,12 @@ Each reminder has its own schedule, so you can change one without affecting the 
 
 > Touch Grass currently supports macOS.
 
+## Before you start
+
+- macOS 13 or later
+- Node 18 or later, available on your `PATH`
+- Xcode Command Line Tools, which the reminder companion is built with (`xcode-select --install`)
+
 ## Install
 
 Open any Codex or Claude Code conversation and say:
@@ -45,6 +51,19 @@ When installation is complete, start a new Codex task or Claude Code session and
 > Introduce Touch Grass and tell me how I can personalize it.
 
 Touch Grass will then be available in every new conversation in that app.
+
+## Updating
+
+Ask your agent to update Touch Grass, or run:
+
+```bash
+cd ~/.local/share/touch-grass/repository
+git pull --ff-only
+npm run install:macos-helper
+claude plugin marketplace update touch-grass && claude plugin update touch-grass@touch-grass
+```
+
+The last step is for Claude Code; for Codex it is `codex plugin marketplace add "$HOME/.local/share/touch-grass/repository"` followed by `codex plugin add touch-grass@touch-grass`. Rebuilding the companion matters as much as updating the plugin — they are two halves of the same release. If you ever suspect they have drifted apart, ask "is Touch Grass healthy?" and your agent will check.
 
 ## Make it yours
 

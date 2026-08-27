@@ -59,7 +59,7 @@ test('both host manifests identify the same plugin version', async () => {
 });
 
 test('welcome banner ships both approved transparent static portraits', async () => {
-  for (const name of ['nian', 'you']) {
+  for (const name of ['nian', 'yuzu']) {
     const source = await readFile(path.join(pluginRoot, 'assets', 'welcome', `${name}.png`));
     assert.deepEqual([...source.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
     assert.ok(source.readUInt32BE(16) <= 320);
@@ -79,7 +79,7 @@ test('Nian and You ship as complete transparent animated companion packs', async
     path.join(pluginRoot, 'assets', 'companions', 'manifest.json'),
     'utf8'
   ));
-  assert.deepEqual(manifest.companions.map((item) => item.id), ['nian', 'you']);
+  assert.deepEqual(manifest.companions.map((item) => item.id), ['nian', 'yuzu']);
   const actions = ['water', 'stretch', 'snack', 'lunch', 'dinner', 'walk', 'eyes', 'bedtime'];
 
   for (const companion of manifest.companions) {
@@ -140,7 +140,9 @@ test('macOS presence sampling uses aggregate idle age without privileged event c
   assert.match(swift, /frontmostApplication/);
   assert.match(swift, /com\.openai\.codex/);
   assert.match(swift, /com\.anthropic\.claudefordesktop/);
-  assert.match(swift, /isClaudeDesktop \|\| isClaudeCodeCLIHost/);
+  assert.match(swift, /isClaudeDesktop \|\| isTerminalHost/);
+  assert.match(swift, /hosts\.contains\("codex"\) && \(isCodexDesktop \|\| isTerminalHost\)/);
+  assert.doesNotMatch(swift, /allowingReadAccessTo: URL\(fileURLWithPath: "\/"\)/);
   assert.doesNotMatch(swift, /CGEvent\.tapCreate|NSEvent\.addGlobalMonitor/);
   assert.doesNotMatch(plist, /Accessibility|InputMonitoring|ScreenCapture|ScreenRecording/i);
 });
@@ -158,12 +160,12 @@ test('welcome payload encodes both local portrait URLs', () => {
     variant: 'welcome',
     title: 'Touch Grass is here',
     message: 'Ready.',
-    assetPaths: ['/tmp/nian.png', '/tmp/you.png'],
+    assetPaths: ['/tmp/nian.png', '/tmp/yuzu.png'],
     durationSeconds: 18
   });
   const encoded = new URL(url).searchParams.get('data');
   const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
-  assert.deepEqual(payload.assetUrls, ['file:///tmp/nian.png', 'file:///tmp/you.png']);
+  assert.deepEqual(payload.assetUrls, ['file:///tmp/nian.png', 'file:///tmp/yuzu.png']);
   assert.equal(payload.assetPaths, undefined);
 });
 

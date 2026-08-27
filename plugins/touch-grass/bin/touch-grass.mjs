@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readdir } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import {
   COMPANION_PAIR_ART,
@@ -83,12 +83,20 @@ async function setConfigValue(key, rawValue) {
     duration: 'reminderDurationSeconds'
   };
   const canonical = aliases[key] ?? key;
+  const knownCompanionIds = canonical === 'companion'
+    ? new Set((await availableCompanions(await loadConfig())).map((item) => item.id))
+    : new Set();
   const config = await updateConfig((current) => {
     if (canonical === 'enabled') current.enabled = boolValue(rawValue);
     else if (['idleResetMinutes', 'reminderDurationSeconds'].includes(canonical)) {
       current[canonical] = Number(rawValue);
     }
-    else if (canonical === 'companion') current.companion = rawValue;
+    else if (canonical === 'companion') {
+      if (String(rawValue) !== 'rotate' && !knownCompanionIds.has(String(rawValue))) {
+        throw new Error(`I don't have a companion called ${rawValue}. Add it first with companions add.`);
+      }
+      current.companion = rawValue;
+    }
     else if (canonical === 'quiet-hours') {
       if (String(rawValue).toLowerCase() === 'off') current.quietHours.enabled = false;
       else {
@@ -279,8 +287,25 @@ async function addCompanion(id, flags) {
 }
 
 async function removeCompanion(id) {
+  const bundledIds = new Set(
+    (await availableCompanions({ companions: [], hiddenCompanionIds: [] }))
+      .filter((item) => item.bundled)
+      .map((item) => item.id)
+  );
   let removedName = id;
   await updateConfig((current) => {
+    // A bundled cat cannot be deleted from disk, so hide it instead of
+    // reporting that it was never there.
+    if (bundledIds.has(id)) {
+      const remaining = [...bundledIds].filter((item) => item !== id && !(current.hiddenCompanionIds ?? []).includes(item));
+      if (remaining.length === 0 && current.companions.length === 0) {
+        throw new Error('That is the last companion left. Add one of your own before hiding this one.');
+      }
+      removedName = id;
+      current.hiddenCompanionIds = [...new Set([...(current.hiddenCompanionIds ?? []), id])];
+      if (current.companion === id) current.companion = 'rotate';
+      return current;
+    }
     const before = current.companions.length;
     removedName = current.companions.find((item) => item.id === id)?.name ?? id;
     current.companions = current.companions.filter((item) => item.id !== id);
@@ -314,8 +339,23 @@ async function doctor() {
   const sample = reminders[0] ? await previewReminder(reminders[0].id) : null;
   const launch = sample ? resolveReminderCommand('file:///touch-grass-preview') : null;
   const popupReady = launch?.mode === 'app-window' || (launch?.mode === 'native-helper' && launch.ready);
+  const pluginVersion = JSON.parse(
+    await readFile(path.join(PLUGIN_ROOT, '.claude-plugin', 'plugin.json'), 'utf8')
+  ).version;
+  const helperVersion = launch?.helperVersion ?? null;
+  // A plugin update does not rebuild the native companion, so the two can drift.
+  const helperVersionMatches = !popupReady || helperVersion === null
+    ? null
+    : helperVersion === pluginVersion;
+
   print({
-    ok: reminders.length > 0 && bundledCatPacksReady && popupReady,
+    ok: reminders.length > 0 && bundledCatPacksReady && popupReady && helperVersionMatches !== false,
+    pluginVersion,
+    helperVersion,
+    helperVersionMatches,
+    ...(helperVersionMatches === false
+      ? { helperUpgradeHint: 'The popup companion is an older build. Rebuild it with: npm run install:macos-helper' }
+      : {}),
     node: process.version,
     platform: process.platform,
     dataDir: paths.dir,

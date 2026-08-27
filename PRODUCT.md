@@ -35,7 +35,7 @@ Touch Grass is configured through ordinary conversation with the coding agent, b
 - Each reminder group has its own cadence rather than participating in a random rotation.
 - Defaults: eye rest every 20 active minutes; water every 30 active minutes; stretch every 60 active minutes; walk every 120 active minutes; snacks at 10:30 AM and 3:30 PM; bedtime at 10 PM with a 20-minute wind-down.
 - Quiet hours are off initially. Users can change timing, quiet periods, snooze, enablement, custom reminder types, and cats through natural-language requests.
-- Every reminder requires a matching animated cat GIF or WebP. The two complete bundled packs feature the real-life model cats Nian and You; the placeholder is only a load-failure fallback.
+- Every reminder requires a matching animated cat GIF or WebP. The two complete bundled packs feature the real-life model cats Nian and Yuzu; the placeholder is only a load-failure fallback.
 - No settings website, hosted service, telemetry, account, API key, or network dependency.
 
 ## Brand Commitments
@@ -49,7 +49,7 @@ Touch Grass is configured through ordinary conversation with the coding agent, b
 
 - Working local Node reminder engine, Codex and Claude Code hooks, and macOS popup companion in this repository.
 - Built-in action icons are load-failure fallbacks only.
-- Two complete transparent six-action GIF packs based on the real cats Nian and You are bundled and rotate by default.
+- Two complete transparent six-action GIF packs based on the real cats Nian and Yuzu are bundled and rotate by default.
 
 ## Product Principles
 

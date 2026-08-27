@@ -13,7 +13,7 @@ const PRESETS_PATH = path.join(PLUGIN_ROOT, 'presets.json');
 // welcome banner. Keeps a custom reminder from falling back to a bare glyph.
 export const COMPANION_PAIR_ART = Object.freeze([
   path.join(PLUGIN_ROOT, 'assets', 'welcome', 'nian.png'),
-  path.join(PLUGIN_ROOT, 'assets', 'welcome', 'you.png')
+  path.join(PLUGIN_ROOT, 'assets', 'welcome', 'yuzu.png')
 ]);
 
 export const DEFAULT_REMINDER_SCHEDULES = Object.freeze({
@@ -40,6 +40,7 @@ const DEFAULT_CONFIG = Object.freeze({
   },
   reminderSchedules: DEFAULT_REMINDER_SCHEDULES,
   disabledPresetIds: [],
+  hiddenCompanionIds: [],
   customReminders: [],
   companions: []
 });
@@ -178,6 +179,12 @@ function cleanAssetMap(value) {
   return assets;
 }
 
+// The second bundled cat shipped as "you", which collided with the pronoun in
+// every sentence the product spoke. She is Yuzu now.
+function renameLegacyCompanionId(id) {
+  return id === 'you' ? 'yuzu' : id;
+}
+
 function normalizeCustomReminder(item) {
   return {
     id: cleanId(item.id, 'reminder id'),
@@ -232,6 +239,9 @@ export function normalizeConfig(input = {}) {
     },
     reminderSchedules: normalizeReminderSchedules(input.reminderSchedules, legacyInterval),
     disabledPresetIds: [...new Set((input.disabledPresetIds ?? []).map((id) => cleanId(id, 'preset id')))],
+    hiddenCompanionIds: [...new Set((input.hiddenCompanionIds ?? [])
+      .map((item) => cleanId(item, 'companion id'))
+      .map(renameLegacyCompanionId))],
     customReminders: (input.customReminders ?? []).map(normalizeCustomReminder),
     companions: (input.companions ?? []).map(normalizeCompanion)
   };
@@ -250,7 +260,9 @@ export function normalizeConfig(input = {}) {
     if (companionIds.has(companion.id)) throw new Error(`Duplicate companion id: ${companion.id}`);
     companionIds.add(companion.id);
   }
-  if (config.companion !== 'rotate') config.companion = cleanId(config.companion, 'companion id');
+  if (config.companion !== 'rotate') {
+    config.companion = renameLegacyCompanionId(cleanId(config.companion, 'companion id'));
+  }
 
   return config;
 }

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
-import { statSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -16,12 +16,15 @@ export function nativeHelperStatus(env = process.env, nowMs = Date.now()) {
   const bridgePath = nativeBridgeDirectory(env);
   const heartbeatPath = path.join(bridgePath, 'helper.json');
   let ready = false;
+  let helperVersion = null;
   try {
     ready = nowMs - statSync(heartbeatPath).mtimeMs < 3_500;
+    const heartbeat = JSON.parse(readFileSync(heartbeatPath, 'utf8'));
+    if (typeof heartbeat.version === 'string') helperVersion = heartbeat.version;
   } catch {
-    ready = false;
+    ready = ready && false;
   }
-  return { bridgePath, heartbeatPath, ready };
+  return { bridgePath, heartbeatPath, ready, helperVersion };
 }
 
 function sessionKey(input, env, host) {

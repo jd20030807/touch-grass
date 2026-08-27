@@ -26,22 +26,41 @@ private enum PresenceDetector {
     private static let claudeDesktopBundleIdentifier = "com.anthropic.claudefordesktop"
     private static let recentInputSeconds: Double = 90
 
+    // Exact identifiers, because substring matching credited any application
+    // whose name merely contained "zed", "warp", or "cursor".
+    private static let terminalBundleIdentifiers: Set<String> = [
+        "com.apple.terminal",
+        "com.googlecode.iterm2",
+        "dev.warp.warp-stable",
+        "dev.warp.warp-preview",
+        "com.microsoft.vscode",
+        "com.microsoft.vscodeinsiders",
+        "com.visualstudio.code.oss",
+        "com.vscodium",
+        "com.todesktop.230313mzl4w4u92",
+        "com.github.wez.wezterm",
+        "org.alacritty",
+        "io.alacritty",
+        "com.mitchellh.ghostty",
+        "dev.zed.zed",
+        "dev.zed.zed-preview",
+        "dev.zed.zed-dev"
+    ]
+
     static func foregroundMatches(_ hosts: Set<String>) -> Bool {
         guard !hosts.isEmpty, let application = NSWorkspace.shared.frontmostApplication else { return false }
         let bundleIdentifier = application.bundleIdentifier?.lowercased() ?? ""
-        let applicationName = application.localizedName?.lowercased() ?? ""
-        let fingerprint = "\(applicationName) \(bundleIdentifier)"
 
         let isCodexDesktop = bundleIdentifier == codexBundleIdentifier
         let isClaudeDesktop = bundleIdentifier == claudeDesktopBundleIdentifier
-        let isClaudeCodeCLIHost = [
-            "com.apple.terminal", "com.googlecode.iterm2", "warp", "visual studio code",
-            "vscode", "cursor", "wezterm", "alacritty", "ghostty", "zed"
-        ].contains { fingerprint.contains($0) }
+        // A terminal counts for whichever agent holds the lease. Both Codex and
+        // Claude Code are commonly run from one, and the lease already says
+        // which of them is live.
+        let isTerminalHost = terminalBundleIdentifiers.contains(bundleIdentifier)
 
-        if hosts.contains("codex") && isCodexDesktop { return true }
-        if hosts.contains("claude-code") && (isClaudeDesktop || isClaudeCodeCLIHost) { return true }
-        if hosts.contains("agent") && (isCodexDesktop || isClaudeDesktop || isClaudeCodeCLIHost) { return true }
+        if hosts.contains("codex") && (isCodexDesktop || isTerminalHost) { return true }
+        if hosts.contains("claude-code") && (isClaudeDesktop || isTerminalHost) { return true }
+        if hosts.contains("agent") && (isCodexDesktop || isClaudeDesktop || isTerminalHost) { return true }
         return false
     }
 
@@ -157,6 +176,8 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
     @objc private func writeHeartbeat() {
         let heartbeat: [String: Any] = [
             "pid": ProcessInfo.processInfo.processIdentifier,
+            // Lets the plugin notice it is talking to an older helper build.
+            "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
             "updatedAt": ISO8601DateFormatter().string(from: Date())
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: heartbeat) else { return }
@@ -262,9 +283,22 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
         guard
             let request = try? JSONDecoder().decode(ReminderRequest.self, from: data),
             let url = URL(string: request.url),
-            url.isFileURL
+            url.isFileURL,
+            isReminderPage(url)
         else { return }
         showReminder(url)
+    }
+
+    // The queue directory is user-only, so this crosses no privilege boundary,
+    // but the request still names a page to load. Accept only the plugin's own
+    // reminder page so a stray writer cannot aim the web view somewhere else.
+    private func isReminderPage(_ url: URL) -> Bool {
+        let standardized = url.standardizedFileURL
+        let components = standardized.pathComponents
+        guard components.count >= 2 else { return false }
+        return components[components.count - 2] == "ui"
+            && components[components.count - 1] == "reminder.html"
+            && FileManager.default.fileExists(atPath: standardized.path)
     }
 
     private func showReminder(_ url: URL) {
@@ -307,7 +341,10 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
         self.webView = webView
         self.panel = panel
 
-        webView.loadFileURL(url, allowingReadAccessTo: URL(fileURLWithPath: "/"))
+        // Companion art can live anywhere the user keeps it, so this cannot be
+        // narrowed to the plugin directory, but the whole filesystem is more
+        // than the banner ever needs.
+        webView.loadFileURL(url, allowingReadAccessTo: FileManager.default.homeDirectoryForCurrentUser)
         panel.orderFrontRegardless()
     }
 
