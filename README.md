@@ -2,183 +2,79 @@
 
 # touch-grass
 
-**A tiny local cat who interrupts long vibe-coding sessions—in a good way.**
-
-Codex + Claude Code · local-only · cat GIFs required
+**A gentle break-reminder companion for long coding sessions with Codex and Claude Code.**
 
 </div>
 
-Touch Grass notices sustained, user-present coding time, then opens a notification-sized local banner with a cat doing the suggested break: drinking water, stretching, snacking, turning in a circle as the walk cue, resting its eyes, or getting ready for bed.
+## Meet Touch Grass
 
-There is no settings website. People customize it by talking to Codex or Claude Code, and the agent answers in ordinary language. The plugin, preferences, timing data, banner, and cat files all stay on the computer.
+Touch Grass helps you take care of yourself when you get absorbed in coding. While you work, it gives you friendly reminders to drink water, rest your eyes, stretch, walk around, eat a snack, and wrap up for bed.
 
-> [!IMPORTANT]
-> Touch Grass includes two complete animated companions. Each has matching eight-frame water, stretch, snack, walk-cue, eye-rest, and bedtime GIFs, and the default rotation makes an independent random choice for each reminder.
+It starts with a balanced routine:
 
-## What works now
+- Rest your eyes every 20 minutes of active coding
+- Drink water every 30 minutes
+- Stretch every hour
+- Take a short walk every two hours
+- Get a snack at 10:30 AM and 3:30 PM
+- Wind down at 9:40 PM and head to bed at 10 PM
 
-- One local plugin package for Codex and Claude Code Desktop, CLI, and supported IDE hosts
-- A compact native macOS popup banner fed by a local, privacy-minimal presence counter
-- Six built-in reminder groups: water, stretch, snack, walk, eyes, and two-stage bedtime
-- Independent schedules for every reminder instead of one random rotation
-- A matching animated cat asset required for every reminder
-- Conversational customization with no settings panel or technical settings dump
-- Quiet periods, snoozing, reminder choices, timing changes, and cat rotation
-- Importing personal cats from a local folder
-- No telemetry, hosted service, API key, or runtime package install
+Each reminder has its own schedule, so you can change one without affecting the others. Everything stays on your Mac.
 
-## Install from GitHub
+> Touch Grass currently supports macOS.
 
-In Codex or Claude Code, say:
+## Install
+
+Open any Codex or Claude Code conversation and say:
 
 > Import Touch Grass from https://github.com/jd20030807/touch-grass
 
-The repository-level [IMPORT.md](./IMPORT.md) tells the agent how to keep a stable local checkout, register and install the plugin at user scope, compile and open the native macOS companion, and preserve each host's hook-review step. The agent should not copy Touch Grass into the project you are currently working on.
+Your agent will download Touch Grass, install it for your account, and open the local reminder companion. Let it finish the setup, and approve Touch Grass if Codex or Claude Code asks for permission to enable it.
 
-After installation, start a new Codex task or Claude Code session, review the local Touch Grass hooks, and ask:
+When installation is complete, start a new Codex task or Claude Code session and say:
 
 > Introduce Touch Grass and tell me how I can personalize it.
 
-Everything after the GitHub download runs locally. Touch Grass does not need a hosted service, account, API key, or network access.
+Touch Grass will then be available in every new conversation in that app.
 
-## Test a local checkout
+## Make it yours
 
-Nothing needs to be published first.
-
-### Codex
-
-Register this checkout as a local marketplace:
-
-```bash
-codex plugin marketplace add /absolute/path/to/touch-grass
-codex plugin add touch-grass@touch-grass
-```
-
-Build, install, and open the native popup companion once:
-
-```bash
-npm run install:macos-helper
-```
-
-Keep the companion running, restart Codex, start a new task, and review the local Touch Grass hooks when prompted.
-
-### Claude Code
-
-For a temporary CLI session, launch directly from the checkout:
-
-```bash
-claude --plugin-dir /absolute/path/to/touch-grass/plugins/touch-grass
-```
-
-This does not install the plugin for future sessions. Run `/reload-plugins` after changing plugin or hook files.
-
-For Claude Code Desktop, install this checkout as a local marketplace/plugin, then use the Code tab for a new session. Claude Desktop and the CLI share Claude Code plugin settings and hooks. On macOS, build and open the same local popup companion before testing reminders.
-
-### Try the experience
-
-Ask either agent:
+There is no settings page and no command language to learn. Just describe what you want in a Codex or Claude Code conversation:
 
 ```text
-What can I customize in Touch Grass?
-Remind me to walk around every minute while I test this.
-```
-
-The first request displays the one-time introduction and customization examples. For automatic timing, keep the coding app in front and continue using your keyboard or mouse for at least a minute. A due reminder is delivered on the next agent event. Afterwards, say `Remind me to walk around every two hours again.`
-
-The popup uses the bundled companion animations. The action-icon placeholder appears only if an asset cannot be loaded.
-
-## Use it by talking naturally
-
-There is no control panel to learn. Try phrases such as:
-
-```text
-Remind me to walk around every 40 minutes.
+Remind me to walk every 40 minutes.
 Move snack reminders to 11 AM and 4 PM.
 Keep quiet from 10 PM to 8 AM.
-Turn off snack and bedtime reminders.
+Turn off bedtime reminders.
 Snooze reminders for 30 minutes.
+```
+
+You can change one reminder, several reminders, or your whole routine whenever you like. Touch Grass will answer naturally—for example, “Okay, I won’t remind you about snacks anymore.”
+
+To see your current routine, ask:
+
+> What are my Touch Grass reminders?
+
+## Add your own companion
+
+You can replace the included companions with your own cat, dog, or other character. Put its animations in a folder on your Mac, then tell Codex or Claude Code where to find them:
+
+```text
 Use my dog Mochi from /absolute/path/to/mochi.
-Add a breathing reminder.
+Rotate between my companions.
 ```
 
-Touch Grass responds in the same style—for example, `Okay, I won't remind you about snacks anymore.` It does not expose internal field names or announce configuration mutations.
+A complete companion needs one animation for each built-in action: water, eye rest, stretching, walking, snacking, and bedtime. GIF and animated WebP files are supported. If anything is missing, your agent can help you finish the set.
 
-## Add your own cat
-
-A cat pack is a local folder containing all six matching animations:
+You can also create a new kind of reminder in plain language:
 
 ```text
-water.gif
-stretch.gif
-snack.gif
-walk.gif
-eyes.gif
-bedtime.gif
+Add a breathing reminder every 90 minutes with this GIF.
 ```
 
-Animated WebP files with the same names also work. Static images and incomplete packs are rejected because the cat action is part of every reminder, not an optional decoration.
+## Your privacy
 
-Then ask:
-
-```text
-Use my cat Mochi from /absolute/path/to/mochi.
-Rotate through my cats.
-```
-
-## How it stays local
-
-Agent lifecycle hooks only maintain an opaque, expiring local session lease. The macOS companion counts time when that host's coding app is in front and macOS reports that the keyboard or mouse was used recently. Codex and Claude Desktop are matched by their exact bundle identifiers; Terminal, iTerm, Warp, VS Code, Cursor, and similar hosts remain compatibility paths for Claude Code CLI/IDE sessions. Touch Grass asks the operating system only for elapsed idle time; it does not install event taps, capture screen contents, or record keys, clicks, pointer coordinates, window titles, prompts, transcripts, source code, tool arguments, or tool results.
-
-A reminder appears on the next agent event after it becomes due, so it may not appear at the exact second. Agent-only work stops extending the timers once recent user input expires. Eye, water, stretch, and walk reminders keep separate engaged-coding clocks; a meaningful pause starts each of those clocks fresh. Snack and bedtime reminders use local clock time and only appear while the user is present in the coding app near the scheduled moment.
-
-```text
-Codex hooks ──────┐
-                  ├── opaque local session leases ──┐
-Claude hooks ─────┘                                 │
-                                                   ├── aggregate engaged time
-foreground coding app + recent input age ──────────┘            │
-                                                                 └── native popup + matching cat GIF
-```
-
-On macOS, a tiny native companion owns the presence counter and floating window outside the coding agent's GUI sandbox. The hook sends it a local `file://` reminder through a user-private temporary directory. There is no browser tab, server, network request, global input listener, or special activity-monitoring permission. Windows and Linux currently use a dedicated Chromium app window for manual previews; automatic presence-aware timing awaits native companions for those platforms.
-
-Claude Desktop contains Chat, Cowork, and Code in one application. Touch Grass requires a live Claude Code lease before Claude Desktop can count, but deliberately does not inspect which internal tab is selected. A still-live Code session plus activity elsewhere in Claude Desktop can therefore count until the lease ends or expires. This small overcount avoids reading Claude's UI or window contents.
-
-See [PRIVACY.md](./PRIVACY.md) and [SECURITY.md](./SECURITY.md) for the exact boundaries.
-
-## Maintainer commands
-
-Requires Node.js 18 or newer.
-
-```bash
-npm test
-npm run check
-npm run build:macos-helper
-npm run install:macos-helper
-npm run doctor
-TOUCH_GRASS_HOME="$(mktemp -d)" node plugins/touch-grass/bin/touch-grass.mjs test bedtime --dry-run
-```
-
-The low-level CLI remains available for development, but the normal interface is conversation:
-
-```text
-touch-grass settings
-touch-grass test bedtime
-touch-grass reminders disable snack
-touch-grass reminders interval walk 40
-touch-grass reminders bedtime 23:00 --wind-down 30
-touch-grass companions add mochi --name "Mochi" --dir /path/to/mochi
-touch-grass companions use rotate
-touch-grass snooze 15
-touch-grass doctor
-```
-
-## Release checks
-
-- Confirm animated GIF/WebP playback in every native popup
-- Run the automated tests and both host plugin validators
-- Review installation from a clean local Codex and Claude Code profile
-- Fresh-clone the published repository and repeat the install flow
+Touch Grass runs locally and keeps your preferences on your Mac. It never records your typing, clicks, code, prompts, or window titles. You can read the full details in [PRIVACY.md](./PRIVACY.md) and [SECURITY.md](./SECURITY.md).
 
 ## License
 
