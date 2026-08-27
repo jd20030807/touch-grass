@@ -30,7 +30,9 @@
 
   const title = document.querySelector('#title');
   const message = document.querySelector('#message');
+  const banner = document.querySelector('#banner');
   const pet = document.querySelector('#pet');
+  const petPair = document.querySelector('#pet-pair');
   const icon = document.querySelector('#icon');
   const iconText = document.querySelector('#icon-text');
   const placeholder = document.querySelector('#placeholder');
@@ -43,6 +45,7 @@
 
   function showFallback() {
     pet.hidden = true;
+    petPair.hidden = true;
     if (payload.iconUrl) {
       icon.src = payload.iconUrl;
       icon.alt = `${payload.id} reminder icon`;
@@ -53,7 +56,23 @@
     }
   }
 
-  if (payload.assetUrl) {
+  if (payload.variant === 'welcome' && Array.isArray(payload.assetUrls) && payload.assetUrls.length >= 2) {
+    banner.classList.add('banner--welcome');
+    let failed = false;
+    for (const [index, assetUrl] of payload.assetUrls.slice(0, 2).entries()) {
+      const image = document.createElement('img');
+      image.src = assetUrl;
+      image.alt = '';
+      image.className = `visual__pair-cat visual__pair-cat--${index + 1}`;
+      image.addEventListener('error', () => {
+        if (failed) return;
+        failed = true;
+        showFallback();
+      });
+      petPair.append(image);
+    }
+    petPair.hidden = false;
+  } else if (payload.assetUrl) {
     pet.src = payload.assetUrl;
     pet.alt = payload.companionName
       ? `${payload.companionName} doing the ${payload.id} reminder`

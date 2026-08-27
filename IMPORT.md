@@ -20,9 +20,12 @@ If that checkout already exists and its `origin` is this repository, update it w
 1. Complete **Download and native companion** above.
 2. Run `codex plugin marketplace add "$HOME/.local/share/touch-grass/repository"`.
 3. Run `codex plugin add touch-grass@touch-grass`, or install **Touch Grass** from `/plugins`.
-4. Start a new Codex task.
-5. Review the Touch Grass hooks and trust them only when they run `bin/touch-grass.mjs` inside the installed plugin.
-6. Ask: `Introduce Touch Grass and tell me how I can personalize it.`
+4. Run `node "$HOME/.local/share/touch-grass/repository/plugins/touch-grass/bin/touch-grass.mjs" welcome-banner`.
+5. Only tell the user the import succeeded after the welcome banner command exits successfully.
+6. Tell the user that the importing task cannot start or verify automatic timing because it began before Touch Grass was installed.
+7. Start a completely new Codex task.
+8. Review the Touch Grass hooks and trust them only when they run `bin/touch-grass.mjs` inside the installed plugin.
+9. Ask: `Introduce Touch Grass and tell me how I can personalize it.`
 
 Codex intentionally requires review of non-managed plugin hooks. Do not bypass that review.
 
@@ -33,11 +36,13 @@ Complete **Download and native companion** above, then run:
 ```bash
 claude plugin marketplace add "$HOME/.local/share/touch-grass/repository"
 claude plugin install touch-grass@touch-grass --scope user
+node "$HOME/.local/share/touch-grass/repository/plugins/touch-grass/bin/touch-grass.mjs" welcome-banner
 ```
 
-Start a fresh CLI session, or open Claude Desktop's Code tab for a new session. Run `/reload-plugins` when appropriate, review the local hooks when prompted, then ask: `Introduce Touch Grass and tell me how I can personalize it.`
+Only tell the user the import succeeded after the welcome banner command exits successfully. Explain that the importing session cannot start or verify automatic timing because it began before Touch Grass was installed. Start a completely fresh CLI session, or open Claude Desktop's Code tab for a new session. Run `/reload-plugins` when appropriate, review the local hooks when prompted, then ask: `Introduce Touch Grass and tell me how I can personalize it.`
 
 The native companion must remain installed and running before expecting reminder windows.
+The welcome banner is shown once per local installation. Do not replace it with a chat message if the command fails.
 
 ## Local development
 

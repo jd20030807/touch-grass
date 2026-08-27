@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 export const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const CURRENT_ONBOARDING_VERSION = 4;
+export const CURRENT_WELCOME_BANNER_VERSION = 1;
 const PRESETS_PATH = path.join(PLUGIN_ROOT, 'presets.json');
 
 export const DEFAULT_REMINDER_SCHEDULES = Object.freeze({
@@ -35,9 +36,10 @@ const DEFAULT_CONFIG = Object.freeze({
 });
 
 const DEFAULT_STATE = Object.freeze({
-  schemaVersion: 3,
+  schemaVersion: 4,
   onboardingShown: false,
   onboardingVersion: 0,
+  welcomeBannerVersion: 0,
   activeMsByReminder: {},
   presenceCursor: null,
   deliveredOccurrences: [],
@@ -287,9 +289,10 @@ function normalizeState(input = {}) {
     ? Math.max(0, Number(input.onboardingVersion))
     : input.onboardingShown === true ? 1 : 0;
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     onboardingShown: onboardingVersion >= CURRENT_ONBOARDING_VERSION,
     onboardingVersion,
+    welcomeBannerVersion: Math.max(0, Number(input.welcomeBannerVersion) || 0),
     activeMsByReminder,
     presenceCursor: cleanPresenceCursor(input.presenceCursor),
     deliveredOccurrences: [...new Set(

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -9,9 +9,9 @@ import { fileURLToPath } from 'node:url';
 const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cli = path.join(pluginRoot, 'bin', 'touch-grass.mjs');
 
-function run(args, home) {
+function run(args, home, env = {}) {
   return spawnSync(process.execPath, [cli, ...args], {
-    env: { ...process.env, TOUCH_GRASS_HOME: home },
+    env: { ...process.env, TOUCH_GRASS_HOME: home, ...env },
     encoding: 'utf8'
   });
 }
@@ -37,6 +37,43 @@ test('settings teaches conversational phrases without exposing internal fields',
     assert.doesNotMatch(result.stdout, /Show me a water reminder/);
     assert.doesNotMatch(result.stdout, /Nian|cat-GIF|compact local popup banners|bundled cats|rotate by default/);
     assert.doesNotMatch(result.stdout, /every 50 minutes|18 seconds|shuffle|random|idle reset|activeMs|delivery|intervalMinutes/i);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('welcome banner opens once with both approved static companions', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  const bridge = path.join(home, 'bridge');
+  const env = { TOUCH_GRASS_NATIVE_HELPER: '1', TOUCH_GRASS_BRIDGE_DIR: bridge };
+  try {
+    await mkdir(bridge);
+    await writeFile(path.join(bridge, 'helper.json'), '{}');
+
+    const first = run(['welcome-banner'], home, env);
+    assert.equal(first.status, 0);
+    assert.equal(first.stdout, '');
+
+    const requestPath = path.join(bridge, 'reminder.json');
+    const request = JSON.parse(await readFile(requestPath, 'utf8'));
+    const encoded = new URL(request.url).searchParams.get('data');
+    const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+    assert.equal(payload.variant, 'welcome');
+    assert.equal(payload.title, 'Touch Grass is here');
+    assert.match(payload.message, /break reminders are ready/i);
+    assert.deepEqual(payload.assetUrls.map((url) => path.basename(new URL(url).pathname)), ['nian.png', 'you.png']);
+
+    const state = JSON.parse(await readFile(path.join(home, 'state.json'), 'utf8'));
+    assert.equal(state.welcomeBannerVersion, 1);
+
+    await unlink(requestPath);
+    const second = run(['welcome-banner'], home, env);
+    assert.equal(second.status, 0);
+    await assert.rejects(readFile(requestPath), { code: 'ENOENT' });
+
+    const preview = run(['welcome-banner', '--force', '--dry-run'], home, env);
+    assert.equal(preview.status, 0);
+    assert.equal(JSON.parse(preview.stdout).payload.variant, 'welcome');
   } finally {
     await rm(home, { recursive: true, force: true });
   }

@@ -58,6 +58,16 @@ test('both host manifests identify the same plugin version', async () => {
   assert.equal(claude.version, codex.version.split('+')[0]);
 });
 
+test('welcome banner ships both approved transparent static portraits', async () => {
+  for (const name of ['nian', 'you']) {
+    const source = await readFile(path.join(pluginRoot, 'assets', 'welcome', `${name}.png`));
+    assert.deepEqual([...source.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+    assert.ok(source.readUInt32BE(16) <= 320);
+    assert.ok(source.readUInt32BE(20) <= 320);
+    assert.equal(source[25], 6, `${name} welcome portrait must preserve RGBA transparency`);
+  }
+});
+
 test('chat skill does not embellish first-use copy with companion names or rotation details', async () => {
   const skill = await readFile(path.join(pluginRoot, 'skills', 'touch-grass', 'SKILL.md'), 'utf8');
   assert.doesNotMatch(skill, /Nian and You|rotate(?:s|d|ing)? by default/i);
@@ -140,6 +150,21 @@ test('reminder payload is encoded into a local file URL', () => {
   assert.match(url, /^file:/);
   assert.doesNotMatch(url, /title=Nap/);
   assert.ok(new URL(url).searchParams.get('data'));
+});
+
+test('welcome payload encodes both local portrait URLs', () => {
+  const url = reminderUrl({
+    id: 'welcome',
+    variant: 'welcome',
+    title: 'Touch Grass is here',
+    message: 'Ready.',
+    assetPaths: ['/tmp/nian.png', '/tmp/you.png'],
+    durationSeconds: 18
+  });
+  const encoded = new URL(url).searchParams.get('data');
+  const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+  assert.deepEqual(payload.assetUrls, ['file:///tmp/nian.png', 'file:///tmp/you.png']);
+  assert.equal(payload.assetPaths, undefined);
 });
 
 test('launcher requires either the native helper or a dedicated app window', () => {

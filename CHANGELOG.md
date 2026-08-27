@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-08-27
+
+- Add a one-time install-success banner featuring both bundled companions in their original static artwork
+- Clarify that automatic timing begins in a new task after the plugin hooks are reviewed
+
 ## 0.1.0 - 2026-08-26
 
 - Initial local-first activity engine

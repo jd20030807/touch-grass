@@ -4,6 +4,8 @@ import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import {
   CURRENT_ONBOARDING_VERSION,
+  CURRENT_WELCOME_BANNER_VERSION,
+  PLUGIN_ROOT,
   defaultConfig,
   getDataPaths,
   loadConfig,
@@ -357,11 +359,47 @@ async function showWelcome() {
   print(introductionCopy());
 }
 
+function welcomeBannerPayload() {
+  return {
+    id: 'welcome',
+    eventId: 'welcome',
+    variant: 'welcome',
+    title: 'Touch Grass is here',
+    message: 'Your gentle break reminders are ready. We’ll pop in while you code.',
+    iconText: '✓',
+    assetPaths: [
+      path.join(PLUGIN_ROOT, 'assets', 'welcome', 'nian.png'),
+      path.join(PLUGIN_ROOT, 'assets', 'welcome', 'you.png')
+    ],
+    durationSeconds: 18
+  };
+}
+
+async function showWelcomeBanner(flags = {}) {
+  const state = await loadState();
+  if (!flags.force && state.welcomeBannerVersion >= CURRENT_WELCOME_BANNER_VERSION) return;
+
+  const payload = welcomeBannerPayload();
+  if (flags['dry-run']) {
+    print({ payload, launch: launchReminder(payload, { dryRun: true }) });
+    return;
+  }
+
+  launchReminder(payload);
+  if (!flags.force) {
+    await updateState((current) => ({
+      ...current,
+      welcomeBannerVersion: CURRENT_WELCOME_BANNER_VERSION
+    }));
+  }
+}
+
 function help() {
   print(`Touch Grass — local break reminders for agent sessions
 
 Usage:
   touch-grass welcome
+  touch-grass welcome-banner [--force] [--dry-run]
   touch-grass status [--json]
   touch-grass settings
   touch-grass test [reminder-id] [--companion <id>] [--dry-run]
@@ -402,6 +440,10 @@ async function main() {
   }
   if (command === 'welcome') {
     await showWelcome();
+    return;
+  }
+  if (command === 'welcome-banner') {
+    await showWelcomeBanner(flags);
     return;
   }
   if (command === 'status') {

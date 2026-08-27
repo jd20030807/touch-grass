@@ -50,6 +50,10 @@ button { font: inherit; }
   animation: arrive .24s cubic-bezier(.2, .8, .25, 1) both;
 }
 
+.banner--welcome {
+  grid-template-columns: 124px minmax(0, 1fr);
+}
+
 .visual {
   position: relative;
   display: grid;
@@ -68,6 +72,33 @@ button { font: inherit; }
   object-fit: contain;
   object-position: center bottom;
 }
+
+.visual__pair {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  width: 124px;
+  height: 102px;
+  padding: 4px 2px 1px;
+}
+
+.visual__pair[hidden] { display: none; }
+
+.visual__pair-cat {
+  width: 68px;
+  height: 96px;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.visual__pair-cat--1 {
+  z-index: 1;
+  margin-right: -18px;
+}
+
+.visual__pair-cat--2 { z-index: 2; }
 
 .visual__placeholder {
   position: relative;
@@ -111,6 +142,8 @@ button { font: inherit; }
   border-radius: 50%;
   background: rgba(82, 100, 81, .12);
 }
+
+.banner--welcome .visual__ground { width: 92px; }
 
 .copy {
   min-width: 0;
@@ -194,6 +227,8 @@ h1 {
   transform-origin: left center;
   animation: elapse var(--duration, 18s) linear forwards;
 }
+
+.banner--welcome .progress { left: 124px; }
 
 ::selection {
   background: #d8e5d3;

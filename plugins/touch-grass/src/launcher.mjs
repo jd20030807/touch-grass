@@ -12,9 +12,13 @@ function encodePayload(payload) {
   const browserPayload = {
     ...payload,
     assetUrl: payload.assetPath ? pathToFileURL(payload.assetPath).href : null,
+    assetUrls: Array.isArray(payload.assetPaths)
+      ? payload.assetPaths.map((assetPath) => pathToFileURL(assetPath).href)
+      : [],
     iconUrl: payload.iconPath ? pathToFileURL(payload.iconPath).href : null
   };
   delete browserPayload.assetPath;
+  delete browserPayload.assetPaths;
   delete browserPayload.iconPath;
   return Buffer.from(JSON.stringify(browserPayload), 'utf8').toString('base64url');
 }
