@@ -94,5 +94,5 @@ Default companions, Yuzu and Niangao, developed based on HWZ's real-life, lovely
 Yuzu:
 <img width="3024" height="4032" alt="you" src="https://github.com/user-attachments/assets/9830ea5b-5e66-4b2d-8f8d-a69ec90ca375" />
 
-Niangao:
+Nian:
 <img width="3024" height="4032" alt="nian1" src="https://github.com/user-attachments/assets/649d4d00-31a2-4670-af16-bb557b1d8858" />
