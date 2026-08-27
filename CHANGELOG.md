@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.7 - 2026-08-27
+
+- Say so when a newly added companion's animations live outside your home folder, where the banner cannot read them
+- Describe the banner's file access accurately in the security policy
+
 ## 0.1.6 - 2026-08-27
 
 - Count coding time when Codex runs in a terminal, not only in the Codex desktop app

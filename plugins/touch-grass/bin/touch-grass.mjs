@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { readFile, readdir } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import {
   COMPANION_PAIR_ART,
@@ -283,7 +284,14 @@ async function addCompanion(id, flags) {
     return current;
   });
   const companion = config.companions.find((item) => item.id === id);
-  print(`Perfect — ${companion.name} is ready to bring your reminders.`);
+  // The banner can only read files under the user's home directory, so art kept
+  // elsewhere would silently fall back to the placeholder icon.
+  const homeDirectory = path.resolve(os.homedir());
+  const insideHome = path.resolve(directory) === homeDirectory
+    || path.resolve(directory).startsWith(`${homeDirectory}${path.sep}`);
+  print(insideHome
+    ? `Perfect — ${companion.name} is ready to bring your reminders.`
+    : `Perfect — ${companion.name} is ready to bring your reminders. One thing: these animations live outside your home folder, so the banner may not be able to show them. Copy the folder somewhere under ${os.homedir()} if ${companion.name} turns up as a plain icon.`);
 }
 
 async function removeCompanion(id) {

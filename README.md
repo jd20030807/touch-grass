@@ -100,7 +100,7 @@ Use my dog Mochi from /absolute/path/to/mochi.
 Rotate between my companions.
 ```
 
-A complete companion needs one animation for each built-in action: water, eye rest, stretching, walking, snacking, and bedtime. Name the files after the actions and Touch Grass matches them up for you — lunch and dinner reuse your snacking animation unless you add your own. GIF and animated WebP files are supported. If anything is missing, your agent can help you finish the set.
+Keep the folder somewhere under your home folder so the banner can read it. A complete companion needs one animation for each built-in action: water, eye rest, stretching, walking, snacking, and bedtime. Name the files after the actions and Touch Grass matches them up for you — lunch and dinner reuse your snacking animation unless you add your own. GIF and animated WebP files are supported. If anything is missing, your agent can help you finish the set.
 
 You can also create a new kind of reminder in plain language:
 
