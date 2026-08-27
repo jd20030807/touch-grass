@@ -5,11 +5,13 @@
 **A gentle break-reminder companion for long vibecoding sessions with Codex and Claude Code.**
 
 <img width="603" height="991" alt="touchgrass" src="https://github.com/user-attachments/assets/1d6da80c-7dc8-4fa0-b2b4-5ca2342569f0" />
+
 Credit to IC for inspiring this project <3
 
 </div>
 
 I don't know about you, but I feel like I'm lost in a whole other different galaxy the moment I start lecturing ChatGPT. I get so sucked in: lashing out, crashing out, giving permissions every 5 minutes because I'm scared it's going to go do unintended stuff on/with my computer, and at that moment, I might as well just be a plugged-in brain in a jar, no need for anything else. I forget that as a feeble human being with a mortal body, I need water, I get hungry (which when vibecoding is peaking, I literally don't feel), I need to be able to see stuff and walk around with a functional spine when I'm 80+... stuff that makes me almost go, "why is that still my job??" when I just came off of bossing around 100 agents and feeling like the GOATest GOAT who has ever existed. But alas. 
+
 # We need to TOUCH GRASS! 
 
 ## Meet Touch Grass
