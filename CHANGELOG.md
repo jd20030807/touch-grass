@@ -2,7 +2,7 @@
 
 ## 0.1.7 - 2026-08-27
 
-- Say so when a newly added companion's animations live outside your home folder, where the banner cannot read them
+- Say so when a newly added companion's animations live outside your home folder, where the banner cannot read them, without printing the path to your home folder
 - Describe the banner's file access accurately in the security policy
 
 ## 0.1.6 - 2026-08-27

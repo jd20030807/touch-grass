@@ -164,6 +164,28 @@ test('moving bedtime keeps a wind-down the user already customized', async () =>
   }
 });
 
+test('spoken output never prints the absolute home directory', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  const catDir = path.join(os.tmpdir(), `touch-grass-outside-${process.pid}`);
+  try {
+    await mkdir(catDir, { recursive: true });
+    for (const action of ['water', 'stretch', 'snack', 'walk', 'eyes', 'bedtime']) {
+      await writeFile(path.join(catDir, `${action}.gif`), 'GIF89a');
+    }
+    const added = run(['companions', 'add', 'mochi', '--name', 'Mochi', '--dir', catDir], home);
+    assert.equal(added.status, 0, added.stderr);
+    assert.match(added.stdout, /outside your home folder/i, 'the warning should still appear');
+    assert.doesNotMatch(
+      added.stdout,
+      new RegExp(os.homedir().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+      'conversational output must not name the home directory'
+    );
+  } finally {
+    await rm(catDir, { recursive: true, force: true });
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
 test('choosing a companion that does not exist is refused, not silently ignored', async () => {
   const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
   try {
