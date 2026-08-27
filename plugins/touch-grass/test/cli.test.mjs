@@ -186,6 +186,29 @@ test('spoken output never prints the absolute home directory', async () => {
   }
 });
 
+test('doctor abbreviates the home directory instead of naming the user', async () => {
+  const home = await mkdtemp(path.join(os.homedir(), '.touch-grass-doctor-'));
+  try {
+    const result = run(['doctor'], home);
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.match(report.dataDir, /^~[/\\]/, 'a data directory under home must be written with a tilde');
+    assert.doesNotMatch(result.stdout, new RegExp(os.userInfo().username), 'doctor must not name the user');
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('doctor still prints a data directory outside home in full', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-outside-'));
+  try {
+    const report = JSON.parse(run(['doctor'], home).stdout);
+    assert.equal(report.dataDir, home, 'a path outside home stays literal so it can be debugged');
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
 test('choosing a companion that does not exist is refused, not silently ignored', async () => {
   const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
   try {

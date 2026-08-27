@@ -258,6 +258,19 @@ const COMPANION_ASSET_ALIASES = Object.freeze({
   dinner: Object.freeze(['snack'])
 });
 
+// Diagnostics still have to be true, so this abbreviates rather than hides: a
+// path under the home directory is written with a tilde, and anything else is
+// printed in full so a misconfigured TOUCH_GRASS_HOME is still debuggable.
+function displayPath(value) {
+  if (typeof value !== 'string' || value.length === 0) return value;
+  const homeDirectory = path.resolve(os.homedir());
+  const resolved = path.resolve(value);
+  if (resolved === homeDirectory) return '~';
+  return resolved.startsWith(`${homeDirectory}${path.sep}`)
+    ? `~${path.sep}${path.relative(homeDirectory, resolved)}`
+    : value;
+}
+
 async function addCompanion(id, flags) {
   if (!flags.dir) throw new Error('companions add requires --dir /path/to/assets.');
   const directory = path.resolve(flags.dir);
@@ -337,7 +350,7 @@ async function doctor() {
     for (const action of requiredActions) {
       const assetPath = companion.assets[action];
       if (!assetPath || !(await pathExists(assetPath))) {
-        missingAssets.push({ companion: companion.id, action, assetPath: assetPath ?? null });
+        missingAssets.push({ companion: companion.id, action, assetPath: assetPath ? displayPath(assetPath) : null });
       }
     }
   }
@@ -366,7 +379,7 @@ async function doctor() {
       : {}),
     node: process.version,
     platform: process.platform,
-    dataDir: paths.dir,
+    dataDir: displayPath(paths.dir),
     enabledReminders: reminders.map((item) => item.id),
     companion: config.companion,
     bundledCatPacksReady,

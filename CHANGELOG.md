@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.8 - 2026-08-27
+
+- Write the data folder as `~/.touch-grass` in health checks, so sharing one does not reveal your account name; a folder outside your home is still shown in full so it can be fixed
+
 ## 0.1.7 - 2026-08-27
 
 - Say so when a newly added companion's animations live outside your home folder, where the banner cannot read them, without printing the path to your home folder
