@@ -441,8 +441,10 @@ async function main() {
 
   if (command === 'hook') {
     try {
-      const result = await recordActivity(await readStdin());
-      if (result.due) launchReminder(result.payload);
+      const result = await recordActivity(await readStdin(), { deliver: launchReminder });
+      if (result.reason === 'popup-unavailable' && process.env.TOUCH_GRASS_DEBUG === '1') {
+        process.stderr.write(`touch-grass: ${result.error}\n`);
+      }
     } catch (error) {
       if (process.env.TOUCH_GRASS_DEBUG === '1') process.stderr.write(`touch-grass: ${error.message}\n`);
     }

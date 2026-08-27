@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5 - 2026-08-27
+
+- Keep the popup companion running across restarts by registering it as a login agent, so reminders no longer stop for good after the first reboot
+- Replace a running companion when you upgrade, instead of leaving the previous build in place
+- Hold a reminder until the companion is available again, rather than marking it delivered when no banner could be shown
+
 ## 0.1.4 - 2026-08-27
 
 - Let a custom reminder skip its own animation and arrive with both bundled companions, the way the welcome banner looks

@@ -143,6 +143,46 @@ test('reminders coming due together are spaced out instead of arriving at once',
   }
 });
 
+test('a reminder is kept, not consumed, when the popup companion is not running', async () => {
+  const { directory, env } = await tempEnv();
+  try {
+    const config = defaultConfig();
+    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'bedtime', 'lunch', 'dinner'];
+    await saveConfig(config, env);
+    const base = localTime(12);
+
+    await writePresence(env, base, { stretchEngagedMs: 0 });
+    await recordActivity(hook, { env, nowMs: base });
+
+    await writePresence(env, base + 20 * 60_000, { stretchEngagedMs: 20 * 60_000 });
+    const failed = await recordActivity(hook, {
+      env,
+      nowMs: base + 20 * 60_000,
+      deliver: () => { throw new Error('The Touch Grass popup helper is not running.'); }
+    });
+    assert.equal(failed.due, false);
+    assert.equal(failed.reason, 'popup-unavailable');
+    assert.equal(failed.state.reminderCount, 0);
+    assert.equal(failed.state.lastReminderId, null);
+    assert.equal(failed.state.activeMsByReminder.eyes, 20 * 60_000, 'the clock must not be reset by a failed delivery');
+
+    // Once the companion is back the same reminder still arrives.
+    const delivered = [];
+    await writePresence(env, base + 21 * 60_000, { stretchEngagedMs: 21 * 60_000 });
+    const ok = await recordActivity(hook, {
+      env,
+      nowMs: base + 21 * 60_000,
+      deliver: (payload) => { delivered.push(payload.id); }
+    });
+    assert.equal(ok.due, true);
+    assert.equal(ok.payload.id, 'eyes');
+    assert.deepEqual(delivered, ['eyes']);
+    assert.equal(ok.state.activeMsByReminder.eyes, 0);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('a new presence stretch restarts every activity-based clock', async () => {
   const { directory, env } = await tempEnv();
   try {

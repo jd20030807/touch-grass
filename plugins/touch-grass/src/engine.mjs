@@ -328,6 +328,18 @@ export async function recordActivity(input = {}, options = {}) {
     const companion = chooseCompanion(companions, config, options.random ?? Math.random);
     const payload = await toPayload(reminder, companion, config.reminderDurationSeconds, candidate.presentation);
 
+    // Show the banner before recording it as delivered. If the popup companion
+    // is not running — after a restart, say — the reminder stays due instead of
+    // being marked delivered and silently lost.
+    if (options.deliver) {
+      try {
+        await options.deliver(payload);
+      } catch (error) {
+        await saveState(state, env);
+        return { due: false, reason: 'popup-unavailable', error: error.message, config, state, presence };
+      }
+    }
+
     if (candidate.occurrenceKey) {
       state.deliveredOccurrences = [...state.deliveredOccurrences, candidate.occurrenceKey].slice(-64);
     } else {
