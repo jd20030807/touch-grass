@@ -47,7 +47,7 @@ Touch Grass will then be available in every new conversation in that app.
 
 ## Make it yours
 
-There is no settings page and no command language to learn. Just describe what you want in a Codex or Claude Code conversation:
+There is no settings page and no command language to learn. Just describe what you want in any new Codex or Claude Code conversation:
 
 ```text
 Remind me to walk every 40 minutes.
@@ -59,15 +59,17 @@ Snooze reminders for 30 minutes.
 
 You can change one reminder, several reminders, or your whole routine whenever you like. Touch Grass will answer naturally—for example, “Okay, I won’t remind you about snacks anymore.”
 
+Do this in a chat you started *after* installing. Every conversation picks up its tools at the moment it opens, so the chat you ran the installation in is usually the one chat that cannot reach Touch Grass yet. If it does not seem to understand you, open a fresh chat and ask again there. It does not matter which of the two apps you use — your routine is shared, so a change you make in one shows up in the other.
+
 To see your current routine, ask:
 
 > What are my Touch Grass reminders?
 
 ## Using Codex and Claude Code together
 
-If you install Touch Grass in both Codex and Claude Code, you don't get two competing reminder systems. Both apps share one schedule on your Mac, so your water, stretch, and eye-rest timers are the same no matter which one you're in, and each reminder pops up exactly once.
+**If you use both, install Touch Grass in both.** This does not double anything up, and it is the only way your time adds up properly. Touch Grass only counts the hours you spend in an app it is installed in, so if you install it in Claude Code alone, your Codex hours count for nothing — and once you have been away from Claude Code long enough, it decides you have stepped away from the computer and starts your timers over.
 
-Switching between the two also keeps your streak: if you spend twenty minutes in Codex and then move to Claude Code, Touch Grass counts it as one continuous coding stretch instead of starting the clock over. Change a reminder in either app and the other one picks it up automatically.
+Once it is in both, the two behave as one. Your water, stretch, and eye-rest timers are the same wherever you are, and each reminder appears exactly once, never twice. Switching apps keeps your streak going: twenty minutes in Codex followed by ten in Claude Code is half an hour of coding, not two separate starts. Change a reminder in either app and the other picks it up right away.
 
 ## Add your own companion
 
