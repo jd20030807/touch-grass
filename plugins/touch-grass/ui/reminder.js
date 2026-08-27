@@ -56,7 +56,9 @@
     }
   }
 
-  if (payload.variant === 'welcome' && Array.isArray(payload.assetUrls) && payload.assetUrls.length >= 2) {
+  // Two portraits means the pair layout, whether this is the welcome banner or a
+  // reminder with no animation of its own.
+  if (Array.isArray(payload.assetUrls) && payload.assetUrls.length >= 2) {
     banner.classList.add('banner--welcome');
     let failed = false;
     for (const [index, assetUrl] of payload.assetUrls.slice(0, 2).entries()) {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4 - 2026-08-27
+
+- Let a custom reminder skip its own animation and arrive with both bundled companions, the way the welcome banner looks
+- Keep requiring a real file when an animation path is given
+- Space reminders at least five minutes apart, so clocks that come due together arrive as separate nudges instead of several banners at once
+- Keep a wind-down you already customized when you only move your bedtime
+
 ## 0.1.3 - 2026-08-27
 
 - Add lunch and dinner as built-in reminders, at noon and 6 PM by default

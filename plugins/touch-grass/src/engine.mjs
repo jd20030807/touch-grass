@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  COMPANION_PAIR_ART,
   PLUGIN_ROOT,
   loadConfig,
   loadPresets,
@@ -85,12 +86,29 @@ function chooseCompanion(companions, config, random = Math.random) {
   return companions.find((item) => item.id === config.companion) ?? companions[0];
 }
 
+// Several clocks can come due within the same minute — at the one-hour mark eye
+// rest, water, and stretch are all exactly at their interval. Only one reminder
+// is delivered per hook, and hooks fire every few seconds, so without a floor
+// they arrive as one burst. Bedtime is exempt: its two stages are deliberately
+// close together and it is the reminder least worth postponing.
+const MINIMUM_REMINDER_GAP_MS = 5 * 60_000;
+
+async function pairArtIfAvailable() {
+  const present = [];
+  for (const artPath of COMPANION_PAIR_ART) {
+    if (await pathExists(artPath)) present.push(artPath);
+  }
+  return present.length >= 2 ? present : [];
+}
+
 async function toPayload(reminder, companion, durationSeconds, presentation = {}) {
   const assetAction = presentation.assetAction ?? reminder.id;
   let assetPath = reminder.assetPath ?? null;
   if (companion?.assets?.[assetAction]) assetPath = companion.assets[assetAction];
   if (assetPath && !(await pathExists(assetPath))) assetPath = null;
+  const pairArt = assetPath ? [] : await pairArtIfAvailable();
   return {
+    ...(pairArt.length > 0 ? { assetPaths: pairArt } : {}),
     id: assetAction,
     eventId: presentation.eventId ?? reminder.id,
     title: presentation.title ?? reminder.title,
@@ -100,7 +118,7 @@ async function toPayload(reminder, companion, durationSeconds, presentation = {}
     assetPath,
     companionId: companion?.id ?? null,
     companionName: companion?.name ?? null,
-    artPending: !assetPath,
+    artPending: !assetPath && pairArt.length === 0,
     durationSeconds
   };
 }
@@ -297,6 +315,15 @@ export async function recordActivity(input = {}, options = {}) {
 
     const candidate = scheduled[0] ?? active[0];
     const reminder = candidate.reminder;
+
+    const lastReminderMs = state.lastReminderAt ? Date.parse(state.lastReminderAt) : Number.NaN;
+    const sinceLastReminderMs = Number.isFinite(lastReminderMs)
+      ? nowMs - lastReminderMs
+      : Number.POSITIVE_INFINITY;
+    if (reminder.schedule?.kind !== 'bedtime' && sinceLastReminderMs < MINIMUM_REMINDER_GAP_MS) {
+      await saveState(state, env);
+      return { due: false, reason: 'recently-reminded', config, state, presence };
+    }
     const companions = await availableCompanions(config);
     const companion = chooseCompanion(companions, config, options.random ?? Math.random);
     const payload = await toPayload(reminder, companion, config.reminderDurationSeconds, candidate.presentation);

@@ -110,6 +110,39 @@ test('each active reminder consumes its own aggregate presence clock', async () 
   }
 });
 
+test('reminders coming due together are spaced out instead of arriving at once', async () => {
+  const { directory, env } = await tempEnv();
+  try {
+    const config = defaultConfig();
+    config.disabledPresetIds = ['walk', 'snack', 'bedtime', 'lunch', 'dinner'];
+    await saveConfig(config, env);
+    const base = localTime(12);
+
+    await writePresence(env, base, { stretchEngagedMs: 0 });
+    await recordActivity(hook, { env, nowMs: base });
+
+    // One hour in, eye rest, water, and stretch are all exactly at their interval.
+    await writePresence(env, base + 60 * 60_000, { stretchEngagedMs: 60 * 60_000 });
+    const first = await recordActivity(hook, { env, nowMs: base + 60 * 60_000 });
+    assert.equal(first.due, true);
+    assert.equal(first.payload.id, 'eyes');
+
+    // A hook seconds later must not fire the next one on top of it.
+    await writePresence(env, base + 60 * 60_000 + 5_000, { stretchEngagedMs: 60 * 60_000 + 5_000 });
+    const immediate = await recordActivity(hook, { env, nowMs: base + 60 * 60_000 + 5_000 });
+    assert.equal(immediate.due, false);
+    assert.equal(immediate.reason, 'recently-reminded');
+
+    // Once the gap has passed it is still waiting, not lost.
+    await writePresence(env, base + 66 * 60_000, { stretchEngagedMs: 66 * 60_000 });
+    const second = await recordActivity(hook, { env, nowMs: base + 66 * 60_000 });
+    assert.equal(second.due, true);
+    assert.equal(second.payload.id, 'water');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('a new presence stretch restarts every activity-based clock', async () => {
   const { directory, env } = await tempEnv();
   try {

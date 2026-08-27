@@ -9,6 +9,13 @@ export const CURRENT_ONBOARDING_VERSION = 4;
 export const CURRENT_WELCOME_BANNER_VERSION = 1;
 const PRESETS_PATH = path.join(PLUGIN_ROOT, 'presets.json');
 
+// Shown side by side when a reminder has no animation of its own, and by the
+// welcome banner. Keeps a custom reminder from falling back to a bare glyph.
+export const COMPANION_PAIR_ART = Object.freeze([
+  path.join(PLUGIN_ROOT, 'assets', 'welcome', 'nian.png'),
+  path.join(PLUGIN_ROOT, 'assets', 'welcome', 'you.png')
+]);
+
 export const DEFAULT_REMINDER_SCHEDULES = Object.freeze({
   eyes: Object.freeze({ kind: 'active', intervalMinutes: 20 }),
   water: Object.freeze({ kind: 'active', intervalMinutes: 30 }),

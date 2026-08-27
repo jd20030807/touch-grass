@@ -86,8 +86,11 @@ A complete companion needs one animation for each built-in action: water, eye re
 You can also create a new kind of reminder in plain language:
 
 ```text
-Add a breathing reminder every 90 minutes with this GIF.
+Add a breathing reminder every 90 minutes.
+Add a posture check every 45 minutes with this GIF.
 ```
+
+Your own reminders work exactly like the built-in ones. If you give one its own animation it uses that; if you don't, it arrives with both bundled cats instead.
 
 ## Your privacy
 

@@ -114,12 +114,51 @@ test('settings changes receive natural acknowledgements', async () => {
   }
 });
 
-test('custom reminders require a matching animation', async () => {
+test('a custom reminder without its own animation falls back to both companions', async () => {
   const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
   try {
-    const result = run(['reminders', 'add', 'breathe', '--title', 'Breathe', '--message', 'Take five slow breaths.'], home);
+    const added = run(['reminders', 'add', 'breathe', '--title', 'Breathe', '--message', 'Take five slow breaths.', '--interval', '45'], home);
+    assert.equal(added.status, 0, added.stderr);
+
+    const preview = run(['test', 'breathe', '--dry-run'], home);
+    assert.equal(preview.status, 0, preview.stderr);
+    const payload = JSON.parse(preview.stdout).payload;
+    assert.equal(payload.assetPath, null);
+    assert.equal(payload.artPending, false);
+    assert.deepEqual(
+      payload.assetPaths.map((item) => path.basename(item)),
+      ['nian.png', 'you.png']
+    );
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('a custom reminder still rejects an animation path that does not exist', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  try {
+    const result = run(['reminders', 'add', 'breathe', '--title', 'Breathe', '--message', 'Take five slow breaths.', '--gif', path.join(home, 'missing.gif')], home);
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /matching animated --gif/i);
+    assert.match(result.stderr, /existing GIF or animated WebP/i);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test('moving bedtime keeps a wind-down the user already customized', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  try {
+    const custom = run(['reminders', 'bedtime', '23:00', '--wind-down', '45'], home);
+    assert.equal(custom.status, 0, custom.stderr);
+    assert.match(custom.stdout, /10:15 PM/);
+
+    const moved = run(['reminders', 'bedtime', '23:30'], home);
+    assert.equal(moved.status, 0, moved.stderr);
+    assert.match(moved.stdout, /10:45 PM/, 'the 45-minute wind-down should survive a bedtime change');
+
+    const replaced = run(['reminders', 'bedtime', '23:30', '--wind-down', '20'], home);
+    assert.equal(replaced.status, 0, replaced.stderr);
+    assert.match(replaced.stdout, /11:10 PM/);
   } finally {
     await rm(home, { recursive: true, force: true });
   }

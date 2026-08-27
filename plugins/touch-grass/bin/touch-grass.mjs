@@ -3,6 +3,7 @@
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  COMPANION_PAIR_ART,
   CURRENT_ONBOARDING_VERSION,
   CURRENT_WELCOME_BANNER_VERSION,
   PLUGIN_ROOT,
@@ -150,12 +151,16 @@ async function setReminderTimes(rawId, rawTimes) {
   print(`Okay — I'll bring ${reminderPhrase(id)} at ${schedule.times.map(friendlyTime).join(' and ')}.`);
 }
 
-async function setBedtime(time, rawWindDownMinutes = 20) {
+async function setBedtime(time, rawWindDownMinutes) {
   const config = await updateConfig((current) => {
     current.reminderSchedules.bedtime = {
       kind: 'bedtime',
       time,
-      windDownMinutes: Number(rawWindDownMinutes),
+      // Wind-down is an offset before bedtime, so moving bedtime moves it too.
+      // Only replace the offset when the user actually asked for a new one.
+      windDownMinutes: rawWindDownMinutes === undefined
+        ? (current.reminderSchedules.bedtime?.windDownMinutes ?? 20)
+        : Number(rawWindDownMinutes),
       graceMinutes: current.reminderSchedules.bedtime?.graceMinutes ?? 120
     };
     return current;
@@ -193,12 +198,15 @@ async function setReminderEnabled(rawId, enabled) {
 
 async function addReminder(rawId, flags) {
   const id = canonicalReminderId(rawId);
-  if (!flags.title || !flags.message || !flags.gif) {
-    throw new Error('A custom reminder needs --title, --message, and a matching animated --gif.');
+  if (!flags.title || !flags.message) {
+    throw new Error('A custom reminder needs --title and --message.');
   }
-  const assetPath = path.resolve(flags.gif);
-  if (!/\.(?:gif|webp)$/i.test(assetPath) || !(await pathExists(assetPath))) {
-    throw new Error('The custom reminder animation must be an existing GIF or animated WebP file.');
+  let assetPath = null;
+  if (flags.gif) {
+    assetPath = path.resolve(flags.gif);
+    if (!/\.(?:gif|webp)$/i.test(assetPath) || !(await pathExists(assetPath))) {
+      throw new Error('The custom reminder animation must be an existing GIF or animated WebP file.');
+    }
   }
   const presets = await loadPresets();
   if (presets.reminders.some((item) => item.id === id)) throw new Error(`A preset already uses the id ${id}.`);
@@ -213,7 +221,7 @@ async function addReminder(rawId, flags) {
       schedule: flags.at
         ? { kind: 'clock', times: String(flags.at).split(',').map((time) => time.trim()), graceMinutes: 60 }
         : { kind: 'active', intervalMinutes: Number(flags.interval) || 60 },
-      assetPath
+      ...(assetPath ? { assetPath } : {})
     });
     return current;
   });
@@ -376,10 +384,7 @@ function welcomeBannerPayload() {
     title: 'Touch Grass is here',
     message: 'Your gentle break reminders are ready. We’ll pop in while you code.',
     iconText: '✓',
-    assetPaths: [
-      path.join(PLUGIN_ROOT, 'assets', 'welcome', 'nian.png'),
-      path.join(PLUGIN_ROOT, 'assets', 'welcome', 'you.png')
-    ],
+    assetPaths: [...COMPANION_PAIR_ART],
     durationSeconds: 18
   };
 }
@@ -507,7 +512,7 @@ async function main() {
   }
   if (command === 'reminders' && positionals[0] === 'bedtime') {
     if (!positionals[1]) throw new Error('reminders bedtime requires HH:MM.');
-    await setBedtime(positionals[1], flags['wind-down'] ?? 20);
+    await setBedtime(positionals[1], flags['wind-down']);
     return;
   }
   if (command === 'reminders' && positionals[0] === 'add') {

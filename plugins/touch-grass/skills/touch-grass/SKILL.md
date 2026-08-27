@@ -26,11 +26,14 @@ Common requests:
 - “Keep quiet from 10 PM to 8 AM” → `touch-grass config set quiet-hours 22:00-08:00`
 - “Turn snack reminders off” → `touch-grass reminders disable snack`
 - “Turn bedtime reminders back on” → `touch-grass reminders enable bedtime`
-- “Add a breathing reminder using this GIF” → `touch-grass reminders add breathing --title "Breathing break" --message "Take five slow breaths." --gif "/absolute/path/breathe.gif" --interval 60`
+- “Add a breathing reminder every 45 minutes” → `touch-grass reminders add breathing --title "Breathing break" --message "Take five slow breaths." --interval 45`
+- “Add a breathing reminder using this GIF” → the same command plus `--gif "/absolute/path/breathe.gif"`. Only pass `--gif` when the user supplies an animation; without one the reminder shows both bundled companions.
 - “Use my cat Juniper from this folder” → `touch-grass companions add juniper --name "Juniper" --dir "/absolute/path"`
 - “Rotate my cats” → `touch-grass companions use rotate`
 - “What can I customize?” → `touch-grass settings`
 - “Pause reminders for 30 minutes” → `touch-grass snooze 30`
+
+When the user does not dictate the exact banner wording, write `--title` and `--message` yourself in the voice of the built-in reminders: a short plain title, then one warm sentence that says what to do. Read `presets.json` for the house voice rather than inventing a new one, and keep the user's own words when they supplied them.
 
 For a companion folder, require animated `.gif` or `.webp` files named `water`, `stretch`, `snack`, `walk`, `eyes`, and `bedtime`. Those six cover every reminder: the bedtime animation serves both the wind-down and bedtime stages, and the snack animation covers lunch and dinner unless the folder also has `lunch` and `dinner` files of its own. Do not invent asset paths; inspect the supplied folder first when needed.
 
