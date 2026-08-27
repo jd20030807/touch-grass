@@ -92,6 +92,15 @@ private struct RasterFrame {
         return RasterFrame(width: width, height: height, pixels: output)
     }
 
+    func blended(with other: RasterFrame, amount: Double) -> RasterFrame {
+        precondition(width == other.width && height == other.height)
+        let weight = min(max(amount, 0), 1)
+        let output = zip(pixels, other.pixels).map { left, right in
+            UInt8((Double(left) * (1 - weight) + Double(right) * weight).rounded())
+        }
+        return RasterFrame(width: width, height: height, pixels: output)
+    }
+
     func cgImage() throws -> CGImage {
         let data = Data(pixels) as CFData
         guard let provider = CGDataProvider(data: data),
@@ -270,7 +279,7 @@ private func splitAndKey(_ sheet: RasterFrame, columnCount: Int, rowCount: Int) 
     }
 }
 
-private func renderRegistered(_ frames: [RasterFrame], size: Int = 256, margin: Int = 10) throws -> [CGImage] {
+private func renderRegistered(_ frames: [RasterFrame], size: Int = 256, margin: Int = 10) throws -> [RasterFrame] {
     let bounds = frames.map(\.visibleBounds)
     guard bounds.allSatisfy({ !$0.isEmpty }) else {
         throw BuildError("At least one sprite quadrant contains no visible subject.")
@@ -334,16 +343,47 @@ private func renderRegistered(_ frames: [RasterFrame], size: Int = 256, margin: 
     }
 
     let initialBaselines = renderedFrames.map { $0.visibleBounds.maxY }
-    let targetBaseline = initialBaselines.min() ?? 0
+    let targetBaseline = CGFloat(size - margin - 1)
     renderedFrames = zip(renderedFrames, initialBaselines).map { frame, baseline in
         frame.translated(y: Int((targetBaseline - baseline).rounded()))
     }
+
+    let initialCenters = renderedFrames.map { $0.visibleBounds.midX }
+    let targetCenter = CGFloat(size) / 2
+    renderedFrames = zip(renderedFrames, initialCenters).map { frame, center in
+        frame.translated(x: Int((targetCenter - center).rounded()))
+    }
+
     let baselines = renderedFrames.map { $0.visibleBounds.maxY }
     let baselineSpread = (baselines.max() ?? 0) - (baselines.min() ?? 0)
     guard baselineSpread <= 1 else {
         throw BuildError("Rendered sprite baselines differ by \(baselineSpread) pixels.")
     }
-    return try renderedFrames.map { try $0.cgImage() }
+    let centers = renderedFrames.map { $0.visibleBounds.midX }
+    let centerSpread = (centers.max() ?? 0) - (centers.min() ?? 0)
+    guard centerSpread <= 1 else {
+        throw BuildError("Rendered sprite centers differ by \(centerSpread) pixels.")
+    }
+    let safetyInset = CGFloat(max(4, margin - 2))
+    guard renderedFrames.allSatisfy({ frame in
+        let visible = frame.visibleBounds
+        return visible.minX >= safetyInset
+            && visible.minY >= safetyInset
+            && visible.maxX <= CGFloat(size - 1) - safetyInset
+            && visible.maxY <= CGFloat(size - 1) - safetyInset
+    }) else {
+        throw BuildError("Rendered sprite content is too close to a canvas edge.")
+    }
+    return renderedFrames
+}
+
+private func interpolatedLoop(from keyframes: [RasterFrame]) throws -> [RasterFrame] {
+    guard keyframes.count == 2 else {
+        throw BuildError("A frame directory must contain exactly two PNG keyframes.")
+    }
+    return [0, 0.25, 0.5, 0.75, 1, 0.75, 0.5, 0.25].map {
+        keyframes[0].blended(with: keyframes[1], amount: $0)
+    }
 }
 
 private func writeGIF(_ frames: [CGImage], to url: URL, delay: Double, mode: String) throws {
@@ -390,7 +430,7 @@ private func main() throws {
     let arguments = Array(CommandLine.arguments.dropFirst())
     guard (2...6).contains(arguments.count) else {
         throw BuildError(
-            "Usage: build-companion-gif.swift INPUT_SHEET OUTPUT_GIF "
+            "Usage: build-companion-gif.swift INPUT_SHEET_OR_KEYFRAME_DIR OUTPUT_GIF "
                 + "[FRAME_DELAY_SECONDS] [COLUMNS] [ROWS] [forward|pingpong]"
         )
     }
@@ -409,10 +449,38 @@ private func main() throws {
         withIntermediateDirectories: true
     )
 
-    let sheet = try decode(inputURL)
-    let keyedFrames = splitAndKey(sheet, columnCount: columnCount, rowCount: rowCount)
-    let renderedFrames = try renderRegistered(keyedFrames)
-    try writeGIF(renderedFrames, to: outputURL, delay: delay, mode: mode)
+    var isDirectory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: inputURL.path, isDirectory: &isDirectory) else {
+        throw BuildError("Input does not exist: \(inputURL.path)")
+    }
+
+    let keyedFrames: [RasterFrame]
+    if isDirectory.boolValue {
+        let keyframeURLs = try FileManager.default.contentsOfDirectory(
+            at: inputURL,
+            includingPropertiesForKeys: nil
+        ).filter { $0.pathExtension.lowercased() == "png" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        guard keyframeURLs.count == 2 else {
+            throw BuildError("A frame directory must contain exactly two PNG keyframes.")
+        }
+        keyedFrames = try keyframeURLs.map { url in
+            guard let frame = splitAndKey(try decode(url), columnCount: 1, rowCount: 1).first else {
+                throw BuildError("Could not key \(url.path).")
+            }
+            return frame
+        }
+    } else {
+        let sheet = try decode(inputURL)
+        keyedFrames = splitAndKey(sheet, columnCount: columnCount, rowCount: rowCount)
+    }
+
+    let renderedKeyframes = try renderRegistered(keyedFrames)
+    let renderedFrames = try isDirectory.boolValue
+        ? interpolatedLoop(from: renderedKeyframes)
+        : renderedKeyframes
+    let images = try renderedFrames.map { try $0.cgImage() }
+    try writeGIF(images, to: outputURL, delay: delay, mode: mode)
     print(outputURL.path)
 }
 
