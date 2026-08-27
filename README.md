@@ -80,11 +80,12 @@ There is no control panel to learn. Try phrases such as:
 
 ```text
 Remind me to walk around every 40 minutes.
+Move snack reminders to 11 AM and 4 PM.
 Keep quiet from 10 PM to 8 AM.
 Turn off snack and bedtime reminders.
 Snooze reminders for 30 minutes.
-Use my cat Mochi from /absolute/path/to/mochi.
-Add a breathing reminder with this GIF.
+Use my dog Mochi from /absolute/path/to/mochi.
+Add a breathing reminder.
 ```
 
 Touch Grass responds in the same style—for example, `Okay, I won't remind you about snacks anymore.` It does not expose internal field names or announce configuration mutations.

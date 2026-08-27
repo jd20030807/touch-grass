@@ -311,29 +311,30 @@ async function doctor() {
 }
 
 function introductionCopy() {
-  return `Touch Grass is a local break-reminder companion for Codex and Claude Code. It starts with six built-in reminder groups, each with its own rhythm:
+  return `## Meet Touch Grass
 
-- Drink water — every 30 minutes of active coding
-- Stretch — every hour of active coding
-- Get a snack — at 10:30 AM and 3:30 PM
-- Take a short walk — every two hours of active coding
-- Rest your eyes — every 20 minutes, look about 20 feet away for 20 seconds
-- Bedtime — wind down at 9:40 PM, then a bedtime reminder at 10 PM
+Touch Grass is a local break-reminder companion for Codex and Claude Code. It begins with:
 
-Activity-based reminders count only while your coding app is in front and your computer has been used recently. Touch Grass checks elapsed idle time, but never records what you type, which keys you press, where you click, or your window titles. When you step away for a while, those reminders start counting fresh when you return. Touch Grass starts with no quiet hours.
+- Water every 30 minutes of active coding
+- Eye rest every 20 minutes
+- Stretching every hour
+- Walking every two hours
+- Snacks at 10:30 AM and 3:30 PM
+- Wind-down at 9:40 PM and bedtime at 10 PM
 
-Everything stays on your computer.
+It only counts time while your coding app is in front and you’ve used your computer recently. Everything stays on your Mac—it never records your typing, clicks, code, prompts, or window titles.
 
-You can personalize it naturally by telling me things like:
+You can personalize it simply by telling me things like:
 
-- “Remind me to walk around every 40 minutes.”
+- “Remind me to walk every 40 minutes.”
+- “Move snack reminders to 11 AM and 4 PM.”
 - “Keep quiet from 10 PM to 8 AM.”
-- “Turn off snack and bedtime reminders.”
+- “Turn off bedtime reminders.”
 - “Snooze reminders for 30 minutes.”
-- “Use my cat Mochi from \`/absolute/path/to/mochi\`.”
-- “Add a breathing reminder with this GIF.”
+- “Use my dog Mochi from \`/absolute/path/to/mochi\`.”
+- “Add a breathing reminder.”
 
-Tell me any preference in plain language, and I can configure it for you.`;
+Each reminder can have its own rhythm. Tell me your preferences in plain language, and I’ll configure them locally.`;
 }
 
 async function markOnboardingShown() {

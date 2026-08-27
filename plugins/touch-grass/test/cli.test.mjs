@@ -21,20 +21,21 @@ test('settings teaches conversational phrases without exposing internal fields',
   try {
     const result = run(['settings'], home);
     assert.equal(result.status, 0);
+    assert.match(result.stdout, /## Meet Touch Grass/);
     assert.match(result.stdout, /local break-reminder companion for Codex and Claude Code/);
-    assert.match(result.stdout, /six built-in reminder groups/);
-    assert.match(result.stdout, /Rest your eyes — every 20 minutes/);
-    assert.match(result.stdout, /Drink water — every 30 minutes/);
-    assert.match(result.stdout, /Get a snack — at 10:30 AM and 3:30 PM/);
-    assert.match(result.stdout, /Bedtime — wind down at 9:40 PM/);
-    assert.match(result.stdout, /starts with no quiet hours/);
-    assert.match(result.stdout, /coding app is in front and your computer has been used recently/);
-    assert.match(result.stdout, /never records what you type/);
-    assert.match(result.stdout, /Remind me to walk around every 40 minutes/);
-    assert.match(result.stdout, /Use my cat Mochi from/);
-    assert.match(result.stdout, /Add a breathing reminder with this GIF/);
-    assert.match(result.stdout, /Everything stays on your computer/);
+    assert.match(result.stdout, /Eye rest every 20 minutes/);
+    assert.match(result.stdout, /Water every 30 minutes of active coding/);
+    assert.match(result.stdout, /Snacks at 10:30 AM and 3:30 PM/);
+    assert.match(result.stdout, /Wind-down at 9:40 PM and bedtime at 10 PM/);
+    assert.match(result.stdout, /coding app is in front and you’ve used your computer recently/);
+    assert.match(result.stdout, /Everything stays on your Mac/);
+    assert.match(result.stdout, /never records your typing, clicks, code, prompts, or window titles/);
+    assert.match(result.stdout, /Move snack reminders to 11 AM and 4 PM/);
+    assert.match(result.stdout, /Use my dog Mochi from/);
+    assert.match(result.stdout, /Add a breathing reminder/);
+    assert.match(result.stdout, /Each reminder can have its own rhythm/);
     assert.doesNotMatch(result.stdout, /Show me a water reminder/);
+    assert.doesNotMatch(result.stdout, /cat-GIF|compact local popup banners|bundled cats|rotate by default/);
     assert.doesNotMatch(result.stdout, /every 50 minutes|18 seconds|shuffle|random|idle reset|activeMs|delivery|intervalMinutes/i);
   } finally {
     await rm(home, { recursive: true, force: true });
@@ -47,7 +48,7 @@ test('welcome explains Touch Grass once per local installation', async () => {
     const first = run(['welcome'], home);
     const second = run(['welcome'], home);
     assert.equal(first.status, 0);
-    assert.match(first.stdout, /six built-in reminder groups/);
+    assert.match(first.stdout, /## Meet Touch Grass/);
     assert.equal(second.status, 0);
     assert.equal(second.stdout, '');
   } finally {

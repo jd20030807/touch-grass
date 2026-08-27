@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const CURRENT_ONBOARDING_VERSION = 3;
+export const CURRENT_ONBOARDING_VERSION = 4;
 const PRESETS_PATH = path.join(PLUGIN_ROOT, 'presets.json');
 
 export const DEFAULT_REMINDER_SCHEDULES = Object.freeze({
