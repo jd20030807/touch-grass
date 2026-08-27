@@ -9,6 +9,8 @@ Translate the user's request into the bundled `touch-grass` CLI. Prefer the exec
 
 At the start of every Touch Grass interaction, run `touch-grass welcome`. It prints the first-use explanation only once. When it prints text, show that text before the requested outcome. When it prints nothing, continue normally.
 
+Present `welcome` and `settings` output verbatim. Do not add companion names, rotation behavior, popup-delivery details, or other product facts to those introductions.
+
 Do not edit `~/.touch-grass/config.json` directly. The CLI validates and atomically saves changes.
 
 The product vocabulary is intentionally human. Do not expose implementation labels such as `idle reset`, `delivery`, `order`, `activeMs`, state files, or raw configuration unless the user explicitly asks for developer diagnostics. When the user asks what they can change, run `touch-grass settings` and present its natural-language examples rather than a settings inventory.
@@ -46,7 +48,7 @@ Touch Grass is local-only. Do not add network access, upload activity data, or r
 
 When the user asks how activity detection works, explain it in plain language: agent hooks only keep an opaque local session lease alive; the macOS companion counts time when the matching host is frontmost and the operating system reports recent input. Codex Desktop and Claude Desktop are first-class hosts; supported terminals and editors are fallback hosts for Claude Code CLI/IDE sessions. It queries only how long the computer has been idle. It does not install a keylogger or mouse listener, and it never records keys, clicks, pointer coordinates, window titles, prompts, code, tool inputs, or tool outputs. Agent-only work does not keep the timer moving after recent user input expires. A longer absence begins a fresh coding stretch. If asked about Claude Desktop's Chat, Cowork, and Code tabs, disclose that one application identity covers all three: a live Code lease is required, but the selected internal tab is not inspected.
 
-Reminders always open as compact local popup banners. Nian and You are the two bundled six-action cat-GIF companions and rotate by default. The banner shows the explicit action-icon fallback only if a matching animation cannot be loaded.
+Reminders always open as compact local popup banners. The banner shows the explicit action-icon fallback only if a matching animation cannot be loaded.
 
 Never simulate a reminder in chat. Do not use plain text, emoji, Markdown images, or wording such as “the reminder is showing now” as a substitute for the popup. If the user explicitly asks for a development preview, run `touch-grass test <id>` and only claim it opened after the command exits successfully. The popup itself is the reminder; do not repeat its reminder text in chat. Do not offer previewing as a customization example.
 

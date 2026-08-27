@@ -35,7 +35,7 @@ test('settings teaches conversational phrases without exposing internal fields',
     assert.match(result.stdout, /Add a breathing reminder/);
     assert.match(result.stdout, /Each reminder can have its own rhythm/);
     assert.doesNotMatch(result.stdout, /Show me a water reminder/);
-    assert.doesNotMatch(result.stdout, /cat-GIF|compact local popup banners|bundled cats|rotate by default/);
+    assert.doesNotMatch(result.stdout, /Nian|cat-GIF|compact local popup banners|bundled cats|rotate by default/);
     assert.doesNotMatch(result.stdout, /every 50 minutes|18 seconds|shuffle|random|idle reset|activeMs|delivery|intervalMinutes/i);
   } finally {
     await rm(home, { recursive: true, force: true });

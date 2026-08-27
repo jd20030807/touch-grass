@@ -58,6 +58,12 @@ test('both host manifests identify the same plugin version', async () => {
   assert.equal(claude.version, codex.version.split('+')[0]);
 });
 
+test('chat skill does not embellish first-use copy with companion names or rotation details', async () => {
+  const skill = await readFile(path.join(pluginRoot, 'skills', 'touch-grass', 'SKILL.md'), 'utf8');
+  assert.doesNotMatch(skill, /Nian and You|rotate(?:s|d|ing)? by default/i);
+  assert.match(skill, /Present `welcome` and `settings` output verbatim/);
+});
+
 test('Nian and You ship as complete transparent animated companion packs', async () => {
   const manifest = JSON.parse(await readFile(
     path.join(pluginRoot, 'assets', 'companions', 'manifest.json'),
