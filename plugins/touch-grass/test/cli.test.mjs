@@ -88,6 +88,23 @@ test('custom reminders require a matching animation', async () => {
   }
 });
 
+test('wind-down previews use the bedtime asset and a temporary companion override', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  try {
+    const result = run(['test', 'wind-down', '--companion', 'nian', '--dry-run'], home);
+    assert.equal(result.status, 0);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.payload.id, 'bedtime');
+    assert.equal(output.payload.eventId, 'bedtime-wind-down');
+    assert.equal(output.payload.companionId, 'nian');
+    assert.equal(output.payload.title, 'Start winding down');
+    assert.match(output.payload.message, /Bedtime is in 20 minutes/);
+    assert.match(output.payload.assetPath, /companions\/nian\/bedtime\.gif$/);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
 test('cat packs require all six animated actions including bedtime', async () => {
   const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
   const catDir = path.join(home, 'mochi');

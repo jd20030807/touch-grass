@@ -243,15 +243,41 @@ test('session leases discard content and remove the opaque lease on SessionEnd',
 test('bedtime and wind-down are previewable with the shared bedtime cat action', async () => {
   const { directory, env } = await tempEnv();
   try {
-    const bedtime = await previewReminder('bedtime', { env });
-    const windDown = await previewReminder('bedtime-wind-down', { env });
+    const bedtime = await previewReminder('bedtime', { env, companionId: 'nian' });
+    const windDown = await previewReminder('wind-down', { env, companionId: 'nian' });
     assert.equal(bedtime.id, 'bedtime');
     assert.equal(windDown.id, 'bedtime');
     assert.equal(windDown.eventId, 'bedtime-wind-down');
+    assert.equal(windDown.title, 'Start winding down');
+    assert.match(windDown.message, /Bedtime is in 20 minutes/);
     assert.match(bedtime.iconPath, /bedtime\.svg$/);
     assert.match(bedtime.assetPath, /companions\/nian\/bedtime\.gif$/);
+    assert.match(windDown.assetPath, /companions\/nian\/bedtime\.gif$/);
     assert.equal(bedtime.companionName, 'Nian');
     assert.equal(bedtime.artPending, false);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('rotate mode makes an independent random companion choice for every reminder', async () => {
+  const { directory, env } = await tempEnv();
+  try {
+    const firstHalf = await previewReminder('water', { env, random: () => 0.2 });
+    const secondHalf = await previewReminder('water', { env, random: () => 0.8 });
+    const repeatedSecondHalf = await previewReminder('water', { env, random: () => 0.8 });
+    assert.equal(firstHalf.companionId, 'nian');
+    assert.equal(secondHalf.companionId, 'you');
+    assert.equal(repeatedSecondHalf.companionId, 'you');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('preview rejects unknown reminder ids instead of falling back to water', async () => {
+  const { directory, env } = await tempEnv();
+  try {
+    await assert.rejects(previewReminder('unknown-break', { env }), /not available/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

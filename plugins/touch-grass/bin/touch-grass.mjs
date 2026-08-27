@@ -106,7 +106,7 @@ async function setConfigValue(key, rawValue) {
     print(config.enabled ? 'Touch Grass is back on.' : 'Okay — Touch Grass is paused for now.');
   } else if (canonical === 'companion') {
     print(config.companion === 'rotate'
-      ? `Okay — I'll rotate through your cats.`
+      ? `Okay — I'll choose a companion at random for each reminder.`
       : `Okay — ${config.companion} will bring your reminders.`);
   } else print('Okay — I adjusted how Touch Grass notices an active coding stretch.');
 }
@@ -364,7 +364,7 @@ Usage:
   touch-grass welcome
   touch-grass status [--json]
   touch-grass settings
-  touch-grass test [reminder-id] [--dry-run]
+  touch-grass test [reminder-id] [--companion <id>] [--dry-run]
   touch-grass config get
   touch-grass config set <duration|companion|quiet-hours|enabled> <value>
   touch-grass reminders list
@@ -415,7 +415,9 @@ async function main() {
     return;
   }
   if (command === 'test') {
-    const payload = await previewReminder(positionals[0] ?? 'water');
+    const payload = await previewReminder(positionals[0] ?? 'water', {
+      companionId: typeof flags.companion === 'string' ? flags.companion : undefined
+    });
     if (flags['dry-run']) {
       print({ payload, launch: launchReminder(payload, { dryRun: true }) });
       return;

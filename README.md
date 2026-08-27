@@ -13,7 +13,7 @@ Touch Grass notices sustained, user-present coding time, then opens a notificati
 There is no settings website. People customize it by talking to Codex or Claude Code, and the agent answers in ordinary language. The plugin, preferences, timing data, banner, and cat files all stay on the computer.
 
 > [!IMPORTANT]
-> Touch Grass now includes two complete animated companions based on the project's real-life model cats: Nian and You. Each has matching eight-frame water, stretch, snack, walk-cue, eye-rest, and bedtime GIFs, and the default `rotate` mode alternates between them.
+> Touch Grass now includes two complete animated companions based on the project's real-life model cats. Each has matching eight-frame water, stretch, snack, walk-cue, eye-rest, and bedtime GIFs, and the default `rotate` mode makes an independent random choice for each reminder.
 
 ## What works now
 

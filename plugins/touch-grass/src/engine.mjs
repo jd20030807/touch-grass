@@ -69,11 +69,12 @@ export async function availableCompanions(config) {
   return [...bundled, ...config.companions];
 }
 
-function chooseCompanion(companions, config, state) {
+function chooseCompanion(companions, config, random = Math.random) {
   if (companions.length === 0) return null;
   if (config.companion === 'rotate') {
-    const index = state.nextCompanionIndex % companions.length;
-    state.nextCompanionIndex = (index + 1) % companions.length;
+    const sample = Number(random());
+    const bounded = Number.isFinite(sample) ? Math.min(Math.max(sample, 0), 0.999999999999) : 0;
+    const index = Math.floor(bounded * companions.length);
     return companions[index];
   }
   return companions.find((item) => item.id === config.companion) ?? companions[0];
@@ -292,7 +293,7 @@ export async function recordActivity(input = {}, options = {}) {
     const candidate = scheduled[0] ?? active[0];
     const reminder = candidate.reminder;
     const companions = await availableCompanions(config);
-    const companion = chooseCompanion(companions, config, state);
+    const companion = chooseCompanion(companions, config, options.random ?? Math.random);
     const payload = await toPayload(reminder, companion, config.reminderDurationSeconds, candidate.presentation);
 
     if (candidate.occurrenceKey) {
@@ -314,15 +315,21 @@ export async function recordActivity(input = {}, options = {}) {
 export async function previewReminder(id, options = {}) {
   const env = options.env ?? process.env;
   const config = await loadConfig(env);
-  const state = await loadState(env);
   const reminders = await availableReminders(config);
-  const requestedId = id === 'nap' || id === 'bedtime-wind-down' ? 'bedtime' : id;
-  const reminder = reminders.find((item) => item.id === requestedId) ?? reminders[0];
-  if (!reminder) throw new Error('No enabled reminders are available.');
+  const windDownAliases = new Set(['wind-down', 'winddown', 'bedtime-wind-down']);
+  const isWindDown = windDownAliases.has(id);
+  const requestedId = id === 'nap' || isWindDown ? 'bedtime' : id;
+  const reminder = reminders.find((item) => item.id === requestedId);
+  if (!reminder) throw new Error(`Reminder ${id} is not available.`);
   const companions = await availableCompanions(config);
-  const companion = chooseCompanion(companions, config, state);
+  const companion = options.companionId
+    ? companions.find((item) => item.id === options.companionId)
+    : chooseCompanion(companions, config, options.random ?? Math.random);
+  if (options.companionId && !companion) {
+    throw new Error(`Companion ${options.companionId} is not available.`);
+  }
   let presentation = {};
-  if (id === 'bedtime-wind-down') {
+  if (isWindDown) {
     const windDownMinutes = reminder.schedule?.windDownMinutes ?? 20;
     presentation = {
       assetAction: 'bedtime',

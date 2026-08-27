@@ -162,16 +162,12 @@ private func removeSmallComponents(from frame: inout RasterFrame) {
 }
 
 private func splitAndKey(_ sheet: RasterFrame, columnCount: Int, rowCount: Int) -> [RasterFrame] {
-    let columns = (0..<columnCount).map { column in
-        let x = sheet.width * column / columnCount
-        let nextX = sheet.width * (column + 1) / columnCount
-        return (x, nextX - x)
-    }
+    let cellWidth = sheet.width / columnCount
+    let cellHeight = sheet.height / rowCount
+    let columns = (0..<columnCount).map { column in (column * cellWidth, cellWidth) }
     // Core Graphics exposes decoded pixel rows bottom-up. Read the visual top row first.
     let rows = (0..<rowCount).map { visualRow in
-        let y = sheet.height * (rowCount - visualRow - 1) / rowCount
-        let nextY = sheet.height * (rowCount - visualRow) / rowCount
-        return (y, nextY - y)
+        ((rowCount - visualRow - 1) * cellHeight, cellHeight)
     }
 
     return rows.flatMap { y, height in
@@ -231,17 +227,28 @@ private func splitAndKey(_ sheet: RasterFrame, columnCount: Int, rowCount: Int) 
     }
 }
 
-private func renderAligned(_ frames: [RasterFrame], size: Int = 256, margin: Int = 10) throws -> [CGImage] {
+private func renderRegistered(_ frames: [RasterFrame], size: Int = 256, margin: Int = 10) throws -> [CGImage] {
     let bounds = frames.map(\.visibleBounds)
     guard bounds.allSatisfy({ !$0.isEmpty }) else {
         throw BuildError("At least one sprite quadrant contains no visible subject.")
     }
-
-    let maximumWidth = bounds.map(\.width).max() ?? 1
-    let maximumHeight = bounds.map(\.height).max() ?? 1
+    guard let first = frames.first,
+          frames.allSatisfy({ $0.width == first.width && $0.height == first.height }) else {
+        throw BuildError("Sprite cells must have identical dimensions for stable registration.")
+    }
+    let subjectBounds = bounds.dropFirst().reduce(bounds[0]) { $0.union($1) }
+    let registrationPadding = max(4, min(first.width, first.height) / 40)
+    let registeredBounds = CGRect(
+        x: max(0, Int(subjectBounds.minX) - registrationPadding),
+        y: max(0, Int(subjectBounds.minY) - registrationPadding),
+        width: min(first.width, Int(subjectBounds.maxX) + registrationPadding)
+            - max(0, Int(subjectBounds.minX) - registrationPadding),
+        height: min(first.height, Int(subjectBounds.maxY) + registrationPadding)
+            - max(0, Int(subjectBounds.minY) - registrationPadding)
+    )
     let scale = min(
-        CGFloat(size - margin * 2) / maximumWidth,
-        CGFloat(size - margin * 2) / maximumHeight
+        CGFloat(size - margin * 2) / registeredBounds.width,
+        CGFloat(size - margin * 2) / registeredBounds.height
     )
     let colorSpace = CGColorSpaceCreateDeviceRGB()
     let bitmapInfo = CGBitmapInfo(
@@ -249,9 +256,9 @@ private func renderAligned(_ frames: [RasterFrame], size: Int = 256, margin: Int
             | CGBitmapInfo.byteOrder32Big.rawValue
     )
 
-    return try zip(frames, bounds).map { frame, bounds in
-        let subject = frame.cropped(to: bounds)
-        let source = try subject.cgImage()
+    return try frames.map { frame in
+        let registeredFrame = frame.cropped(to: registeredBounds)
+        let source = try registeredFrame.cgImage()
         var pixels = [UInt8](repeating: 0, count: size * size * 4)
         let created = pixels.withUnsafeMutableBytes { bytes -> Bool in
             guard let context = CGContext(
@@ -266,14 +273,14 @@ private func renderAligned(_ frames: [RasterFrame], size: Int = 256, margin: Int
             context.translateBy(x: 0, y: CGFloat(size))
             context.scaleBy(x: 1, y: -1)
             context.interpolationQuality = .high
-            let drawWidth = CGFloat(subject.width) * scale
-            let drawHeight = CGFloat(subject.height) * scale
+            let drawWidth = CGFloat(registeredFrame.width) * scale
+            let drawHeight = CGFloat(registeredFrame.height) * scale
             let x = (CGFloat(size) - drawWidth) / 2
-            let y = CGFloat(size - margin) - drawHeight
+            let y = (CGFloat(size) - drawHeight) / 2
             context.draw(source, in: CGRect(x: x, y: y, width: drawWidth, height: drawHeight))
             return true
         }
-        guard created else { throw BuildError("Could not render an aligned frame.") }
+        guard created else { throw BuildError("Could not render a registered frame.") }
         return try RasterFrame(width: size, height: size, pixels: pixels).cgImage()
     }
 }
@@ -343,7 +350,7 @@ private func main() throws {
 
     let sheet = try decode(inputURL)
     let keyedFrames = splitAndKey(sheet, columnCount: columnCount, rowCount: rowCount)
-    let renderedFrames = try renderAligned(keyedFrames)
+    let renderedFrames = try renderRegistered(keyedFrames)
     try writeGIF(renderedFrames, to: outputURL, delay: delay, mode: mode)
     print(outputURL.path)
 }
