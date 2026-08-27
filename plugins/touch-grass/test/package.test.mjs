@@ -86,6 +86,13 @@ test('Nian and You ship as complete transparent animated companion packs', async
   }
 });
 
+test('the GIF builder locks every frame to one visual floor baseline', async () => {
+  const builder = await readFile(path.join(pluginRoot, 'scripts', 'build-companion-gif.swift'), 'utf8');
+  assert.match(builder, /targetBaseline/);
+  assert.match(builder, /baselineSpread <= 1/);
+  assert.match(builder, /Rendered sprite baselines differ/);
+});
+
 test('popup is constrained to a notification-sized banner', async () => {
   const [css, swift] = await Promise.all([
     readFile(path.join(pluginRoot, 'ui', 'reminder.css'), 'utf8'),

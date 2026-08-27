@@ -14,6 +14,6 @@
 - Native macOS popup companion with a private local reminder bridge
 - Complete transparent six-action GIF packs for the real cats Nian and You
 - Smoother eight-frame loops, with natural circle turns replacing the original walk cycles
-- Stable sprite registration and extra edge clearance for the four corrected eye-rest, stretch, and snack loops
+- Stable sprite registration, floor anchoring, and extra edge clearance for corrected eye-rest, stretch, and snack loops
 - Explicit wind-down preview routing with temporary companion selection
 - Independent random companion selection for every reminder instead of alternation

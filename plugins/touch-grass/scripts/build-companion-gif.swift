@@ -49,6 +49,49 @@ private struct RasterFrame {
         return RasterFrame(width: outputWidth, height: outputHeight, pixels: output)
     }
 
+    func windowed(to rect: CGRect) -> RasterFrame {
+        let x0 = Int(rect.minX)
+        let y0 = Int(rect.minY)
+        let outputWidth = Int(rect.width)
+        let outputHeight = Int(rect.height)
+        var output = [UInt8](repeating: 0, count: outputWidth * outputHeight * 4)
+
+        for outputY in 0..<outputHeight {
+            let sourceY = y0 + outputY
+            guard sourceY >= 0, sourceY < height else { continue }
+            let sourceMinX = max(0, x0)
+            let sourceMaxX = min(width, x0 + outputWidth)
+            guard sourceMaxX > sourceMinX else { continue }
+            let outputX = sourceMinX - x0
+            let sourceStart = (sourceY * width + sourceMinX) * 4
+            let outputStart = (outputY * outputWidth + outputX) * 4
+            output.replaceSubrange(
+                outputStart..<(outputStart + (sourceMaxX - sourceMinX) * 4),
+                with: pixels[sourceStart..<(sourceStart + (sourceMaxX - sourceMinX) * 4)]
+            )
+        }
+        return RasterFrame(width: outputWidth, height: outputHeight, pixels: output)
+    }
+
+    func translated(x deltaX: Int = 0, y deltaY: Int = 0) -> RasterFrame {
+        var output = [UInt8](repeating: 0, count: width * height * 4)
+        for sourceY in 0..<height {
+            let outputY = sourceY + deltaY
+            guard outputY >= 0, outputY < height else { continue }
+            let sourceMinX = max(0, -deltaX)
+            let sourceMaxX = min(width, width - deltaX)
+            guard sourceMaxX > sourceMinX else { continue }
+            let outputX = sourceMinX + deltaX
+            let sourceStart = (sourceY * width + sourceMinX) * 4
+            let outputStart = (outputY * width + outputX) * 4
+            output.replaceSubrange(
+                outputStart..<(outputStart + (sourceMaxX - sourceMinX) * 4),
+                with: pixels[sourceStart..<(sourceStart + (sourceMaxX - sourceMinX) * 4)]
+            )
+        }
+        return RasterFrame(width: width, height: height, pixels: output)
+    }
+
     func cgImage() throws -> CGImage {
         let data = Data(pixels) as CFData
         guard let provider = CGDataProvider(data: data),
@@ -236,19 +279,18 @@ private func renderRegistered(_ frames: [RasterFrame], size: Int = 256, margin: 
           frames.allSatisfy({ $0.width == first.width && $0.height == first.height }) else {
         throw BuildError("Sprite cells must have identical dimensions for stable registration.")
     }
-    let subjectBounds = bounds.dropFirst().reduce(bounds[0]) { $0.union($1) }
     let registrationPadding = max(4, min(first.width, first.height) / 40)
-    let registeredBounds = CGRect(
-        x: max(0, Int(subjectBounds.minX) - registrationPadding),
-        y: max(0, Int(subjectBounds.minY) - registrationPadding),
-        width: min(first.width, Int(subjectBounds.maxX) + registrationPadding)
-            - max(0, Int(subjectBounds.minX) - registrationPadding),
-        height: min(first.height, Int(subjectBounds.maxY) + registrationPadding)
-            - max(0, Int(subjectBounds.minY) - registrationPadding)
+    let registeredMinX = max(0, Int(bounds.map(\.minX).min() ?? 0) - registrationPadding)
+    let registeredMaxX = min(
+        first.width,
+        Int((bounds.map(\.maxX).max() ?? CGFloat(first.width)).rounded(.up)) + registrationPadding
     )
+    let registeredWidth = registeredMaxX - registeredMinX
+    let maximumSubjectHeight = Int((bounds.map(\.height).max() ?? 1).rounded(.up))
+    let registeredHeight = min(first.height, maximumSubjectHeight + registrationPadding * 2)
     let scale = min(
-        CGFloat(size - margin * 2) / registeredBounds.width,
-        CGFloat(size - margin * 2) / registeredBounds.height
+        CGFloat(size - margin * 2) / CGFloat(registeredWidth),
+        CGFloat(size - margin * 2) / CGFloat(registeredHeight)
     )
     let colorSpace = CGColorSpaceCreateDeviceRGB()
     let bitmapInfo = CGBitmapInfo(
@@ -256,8 +298,15 @@ private func renderRegistered(_ frames: [RasterFrame], size: Int = 256, margin: 
             | CGBitmapInfo.byteOrder32Big.rawValue
     )
 
-    return try frames.map { frame in
-        let registeredFrame = frame.cropped(to: registeredBounds)
+    var renderedFrames: [RasterFrame] = []
+    for (frame, visibleBounds) in zip(frames, bounds) {
+        let registeredY = Int(visibleBounds.maxY.rounded(.up)) + registrationPadding - registeredHeight
+        let registeredFrame = frame.windowed(to: CGRect(
+            x: registeredMinX,
+            y: registeredY,
+            width: registeredWidth,
+            height: registeredHeight
+        ))
         let source = try registeredFrame.cgImage()
         var pixels = [UInt8](repeating: 0, count: size * size * 4)
         let created = pixels.withUnsafeMutableBytes { bytes -> Bool in
@@ -281,8 +330,20 @@ private func renderRegistered(_ frames: [RasterFrame], size: Int = 256, margin: 
             return true
         }
         guard created else { throw BuildError("Could not render a registered frame.") }
-        return try RasterFrame(width: size, height: size, pixels: pixels).cgImage()
+        renderedFrames.append(RasterFrame(width: size, height: size, pixels: pixels))
     }
+
+    let initialBaselines = renderedFrames.map { $0.visibleBounds.maxY }
+    let targetBaseline = initialBaselines.min() ?? 0
+    renderedFrames = zip(renderedFrames, initialBaselines).map { frame, baseline in
+        frame.translated(y: Int((targetBaseline - baseline).rounded()))
+    }
+    let baselines = renderedFrames.map { $0.visibleBounds.maxY }
+    let baselineSpread = (baselines.max() ?? 0) - (baselines.min() ?? 0)
+    guard baselineSpread <= 1 else {
+        throw BuildError("Rendered sprite baselines differ by \(baselineSpread) pixels.")
+    }
+    return try renderedFrames.map { try $0.cgImage() }
 }
 
 private func writeGIF(_ frames: [CGImage], to url: URL, delay: Double, mode: String) throws {
