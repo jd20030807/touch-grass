@@ -232,6 +232,7 @@ test('a helper too old to report its version is flagged, not passed as healthy',
 test('doctor requires a live native scheduler instead of passing on popup health alone', async () => {
   const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
   const bridge = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-bridge-'));
+  const env = { TOUCH_GRASS_NATIVE_HELPER: '1', TOUCH_GRASS_BRIDGE_DIR: bridge };
   try {
     const version = JSON.parse(await readFile(path.join(pluginRoot, '.claude-plugin', 'plugin.json'), 'utf8')).version;
     const now = new Date().toISOString();
@@ -251,7 +252,7 @@ test('doctor requires a live native scheduler instead of passing on popup health
       updatedAt: now
     }));
 
-    const disconnected = JSON.parse(run(['doctor'], home, { TOUCH_GRASS_BRIDGE_DIR: bridge }).stdout);
+    const disconnected = JSON.parse(run(['doctor'], home, env).stdout);
     assert.equal(disconnected.popupReady, true);
     assert.equal(disconnected.helperVersionMatches, true);
     assert.equal(disconnected.activityTrackingReady, false);
@@ -265,7 +266,7 @@ test('doctor requires a live native scheduler instead of passing on popup health
       directAppTracking: true,
       updatedAt: new Date().toISOString()
     }));
-    const connected = JSON.parse(run(['doctor'], home, { TOUCH_GRASS_BRIDGE_DIR: bridge }).stdout);
+    const connected = JSON.parse(run(['doctor'], home, env).stdout);
     assert.equal(connected.activityTrackingReady, true);
     assert.equal(connected.ok, true);
   } finally {
