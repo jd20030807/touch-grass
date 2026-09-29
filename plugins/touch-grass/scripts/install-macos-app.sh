@@ -46,6 +46,24 @@ PLIST
 if [ "${TOUCH_GRASS_NO_LAUNCH:-0}" != "1" ]; then
   heartbeat="${TMPDIR:-/tmp}/touch-grass-$(id -u)/helper.json"
   domain="gui/$(id -u)"
+  expected_version=$(node -p "require('$script_dir/../.claude-plugin/plugin.json').version")
+
+  helper_is_current() {
+    [ -f "$heartbeat" ] || return 1
+    heartbeat_version=$(/usr/bin/plutil -extract version raw -o - "$heartbeat" 2>/dev/null) || return 1
+    scheduler_ready=$(/usr/bin/plutil -extract schedulerReady raw -o - "$heartbeat" 2>/dev/null) || return 1
+    [ "$heartbeat_version" = "$expected_version" ] && [ "$scheduler_ready" = "true" ]
+  }
+
+  wait_for_current_helper() {
+    attempts=${1:-8}
+    while [ "$attempts" -gt 0 ]; do
+      if helper_is_current; then return 0; fi
+      sleep 1
+      attempts=$((attempts - 1))
+    done
+    return 1
+  }
 
   # Stop whatever is running first. An upgrade otherwise leaves the previous
   # helper alive, its heartbeat still fresh, and the new build never runs.
@@ -54,20 +72,12 @@ if [ "${TOUCH_GRASS_NO_LAUNCH:-0}" != "1" ]; then
   sleep 1
 
   launchctl bootstrap "$domain" "$plist" >/dev/null 2>&1 || launchctl load -w "$plist" >/dev/null 2>&1 || true
-  sleep 2
-
-  if ! find "$heartbeat" -mmin -1 -print -quit 2>/dev/null | grep -q .; then
+  if ! wait_for_current_helper 4; then
     /usr/bin/open "$destination_app" >/dev/null 2>&1 || true
-    sleep 2
   fi
 
-  if ! find "$heartbeat" -mmin -1 -print -quit 2>/dev/null | grep -q .; then
-    nohup "$destination_app/Contents/MacOS/TouchGrassPopup" >/dev/null 2>&1 &
-    sleep 1
-  fi
-
-  if ! find "$heartbeat" -mmin -1 -print -quit 2>/dev/null | grep -q .; then
-    printf '%s\n' 'Touch Grass.app was installed, but the popup helper did not start.' >&2
+  if ! wait_for_current_helper 8; then
+    printf '%s\n' 'Touch Grass.app was installed, but the current automatic-timing helper did not start.' >&2
     printf '%s\n' "Open it manually: $destination_app" >&2
     exit 1
   fi

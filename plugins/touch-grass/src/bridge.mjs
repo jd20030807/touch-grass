@@ -17,14 +17,18 @@ export function nativeHelperStatus(env = process.env, nowMs = Date.now()) {
   const heartbeatPath = path.join(bridgePath, 'helper.json');
   let ready = false;
   let helperVersion = null;
+  let schedulerReady = false;
+  let directAppTracking = false;
   try {
     ready = nowMs - statSync(heartbeatPath).mtimeMs < 3_500;
     const heartbeat = JSON.parse(readFileSync(heartbeatPath, 'utf8'));
     if (typeof heartbeat.version === 'string') helperVersion = heartbeat.version;
+    schedulerReady = heartbeat.schedulerReady === true;
+    directAppTracking = heartbeat.directAppTracking === true;
   } catch {
     ready = ready && false;
   }
-  return { bridgePath, heartbeatPath, ready, helperVersion };
+  return { bridgePath, heartbeatPath, ready, helperVersion, schedulerReady, directAppTracking };
 }
 
 function sessionKey(input, env, host) {

@@ -10,7 +10,7 @@ import {
   saveState,
   withDataLock
 } from './config.mjs';
-import { publishAgentSession, readPresenceSnapshot } from './bridge.mjs';
+import { nativeHelperStatus, publishAgentSession, readPresenceSnapshot } from './bridge.mjs';
 
 export function isQuietHours(quietHours, now = new Date()) {
   if (!quietHours?.enabled) return false;
@@ -265,28 +265,15 @@ function activeCandidates(reminders, state) {
     .sort((left, right) => right.urgency - left.urgency || left.intervalMs - right.intervalMs);
 }
 
-export async function recordActivity(input = {}, options = {}) {
+export async function tickActivity(options = {}) {
   const nowMs = options.nowMs ?? Date.now();
   const env = options.env ?? process.env;
-  const host = inferHost(input, env);
-  const eventName = String(input.hook_event_name ?? input.event ?? 'activity');
-
-  if (eventName.toLowerCase().replace('_', '') === 'sessionend') {
-    await publishAgentSession(input, { env, nowMs, host });
-    return { due: false, reason: 'session-ended' };
-  }
 
   return withDataLock(async () => {
     const config = await loadConfig(env);
     const state = await loadState(env);
     const now = new Date(nowMs);
     const reminders = await availableReminders(config);
-    await publishAgentSession(input, {
-      env,
-      nowMs,
-      host,
-      awayResetMinutes: config.idleResetMinutes
-    });
     const presence = await readPresenceSnapshot(env, nowMs);
     const progress = applyPresenceProgress(reminders, state, presence);
 
@@ -368,6 +355,28 @@ export async function recordActivity(input = {}, options = {}) {
   }, env);
 }
 
+export async function recordActivity(input = {}, options = {}) {
+  const nowMs = options.nowMs ?? Date.now();
+  const env = options.env ?? process.env;
+  const host = inferHost(input, env);
+  const eventName = String(input.hook_event_name ?? input.event ?? 'activity');
+
+  if (eventName.toLowerCase().replace('_', '') === 'sessionend') {
+    await publishAgentSession(input, { env, nowMs, host });
+    return { due: false, reason: 'session-ended' };
+  }
+
+  // Hooks remain useful for terminal and editor sessions, but desktop timing no
+  // longer depends on them. The native companion runs tickActivity itself.
+  await publishAgentSession(input, {
+    env,
+    nowMs,
+    host,
+    awayResetMinutes: (await loadConfig(env)).idleResetMinutes
+  });
+  return tickActivity(options);
+}
+
 export async function previewReminder(id, options = {}) {
   const env = options.env ?? process.env;
   const config = await loadConfig(env);
@@ -415,6 +424,7 @@ export async function statusSnapshot(env = process.env, nowMs = Date.now()) {
   const config = await loadConfig(env);
   const state = await loadState(env);
   const presence = await readPresenceSnapshot(env, nowMs);
+  const helper = nativeHelperStatus(env, nowMs);
   return {
     enabled: config.enabled,
     schedules: config.reminderSchedules,
@@ -426,6 +436,10 @@ export async function statusSnapshot(env = process.env, nowMs = Date.now()) {
     lastReminderId: state.lastReminderId,
     reminderCount: state.reminderCount,
     presenceAvailable: presence !== null,
-    currentlyEngaged: presence?.engaged === true
+    currentlyEngaged: presence?.engaged === true,
+    activityTrackingReady: helper.ready
+      && helper.schedulerReady
+      && helper.directAppTracking
+      && presence !== null
   };
 }

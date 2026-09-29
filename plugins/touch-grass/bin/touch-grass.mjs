@@ -3,6 +3,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import {
   COMPANION_PAIR_ART,
   CURRENT_ONBOARDING_VERSION,
@@ -17,7 +18,14 @@ import {
   updateConfig,
   updateState
 } from '../src/config.mjs';
-import { availableCompanions, availableReminders, previewReminder, recordActivity, statusSnapshot } from '../src/engine.mjs';
+import {
+  availableCompanions,
+  availableReminders,
+  previewReminder,
+  recordActivity,
+  statusSnapshot,
+  tickActivity
+} from '../src/engine.mjs';
 import { readPresenceSnapshot } from '../src/bridge.mjs';
 import { launchReminder, resolveReminderCommand } from '../src/launcher.mjs';
 
@@ -76,6 +84,41 @@ async function readStdin() {
   let input = '';
   for await (const chunk of process.stdin) input += chunk;
   return input.trim() ? JSON.parse(input) : {};
+}
+
+async function backgroundTick() {
+  try {
+    const result = await tickActivity({ deliver: launchReminder });
+    if (result.reason === 'popup-unavailable' && process.env.TOUCH_GRASS_DEBUG === '1') {
+      process.stderr.write(`touch-grass: ${result.error}\n`);
+    }
+  } catch (error) {
+    if (process.env.TOUCH_GRASS_DEBUG === '1') process.stderr.write(`touch-grass: ${error.message}\n`);
+  }
+}
+
+function monitorParentIsAlive() {
+  const parentPid = Number(process.env.TOUCH_GRASS_PARENT_PID);
+  if (!Number.isInteger(parentPid) || parentPid <= 1) return true;
+  try {
+    process.kill(parentPid, 0);
+    return true;
+  } catch (error) {
+    return error.code === 'EPERM';
+  }
+}
+
+async function monitor() {
+  let stopped = false;
+  const stop = () => { stopped = true; };
+  process.once('SIGINT', stop);
+  process.once('SIGTERM', stop);
+
+  const intervalMs = Math.min(60_000, Math.max(1_000, Number(process.env.TOUCH_GRASS_MONITOR_INTERVAL_MS) || 5_000));
+  while (!stopped && monitorParentIsAlive()) {
+    await backgroundTick();
+    if (!stopped) await delay(intervalMs);
+  }
 }
 
 async function setConfigValue(key, rawValue) {
@@ -394,14 +437,23 @@ async function doctor() {
   // is therefore older than the plugin by definition — exactly the case this
   // check exists to catch, so it must not read as healthy.
   const helperVersionMatches = !popupReady ? null : helperVersion === pluginVersion;
+  const presence = await readPresenceSnapshot();
+  const activityTrackingReady = popupReady
+    && helperVersionMatches === true
+    && launch?.schedulerReady === true
+    && launch?.directAppTracking === true
+    && presence !== null;
 
   print({
-    ok: reminders.length > 0 && bundledCatPacksReady && popupReady && helperVersionMatches !== false,
+    ok: reminders.length > 0 && bundledCatPacksReady && activityTrackingReady,
     pluginVersion,
     helperVersion,
     helperVersionMatches,
     ...(helperVersionMatches === false
       ? { helperUpgradeHint: 'The popup companion is an older build. Rebuild it with: npm run install:macos-helper' }
+      : {}),
+    ...(!activityTrackingReady && helperVersionMatches === true
+      ? { activityTrackingHint: 'Automatic timing is not connected. Rebuild and restart the companion with: npm run install:macos-helper' }
       : {}),
     node: process.version,
     platform: process.platform,
@@ -410,6 +462,11 @@ async function doctor() {
     companion: config.companion,
     bundledCatPacksReady,
     popupReady,
+    schedulerReady: launch?.schedulerReady === true,
+    directAppTracking: launch?.directAppTracking === true,
+    presenceAvailable: presence !== null,
+    currentlyEngaged: presence?.engaged === true,
+    activityTrackingReady,
     missingAssets,
     reminderWindow: launch,
     state
@@ -537,6 +594,14 @@ async function main() {
     }
     return;
   }
+  if (command === 'tick') {
+    await backgroundTick();
+    return;
+  }
+  if (command === 'monitor') {
+    await monitor();
+    return;
+  }
   if (command === 'settings') {
     await showSettings();
     return;
@@ -553,9 +618,11 @@ async function main() {
     const status = await statusSnapshot();
     if (flags.json) print(status);
     else print(status.enabled
-      ? status.currentlyEngaged
-        ? 'Touch Grass is on and counting this coding stretch. I’ll pop in when it’s time for a break.'
-        : 'Touch Grass is on. Break timers will count while your coding app is in front and your computer is in use.'
+      ? !status.activityTrackingReady
+        ? 'Touch Grass is installed, but automatic timing is not connected. Reinstall the local companion to repair it.'
+        : status.currentlyEngaged
+          ? 'Touch Grass is on and counting this coding stretch. I’ll pop in when it’s time for a break.'
+          : 'Touch Grass is on. Break timers are paused until Codex or Claude is in front and your computer is in use.'
       : 'Touch Grass is off.');
     return;
   }

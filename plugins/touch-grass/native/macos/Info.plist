@@ -26,5 +26,9 @@
   <true/>
   <key>NSHighResolutionCapable</key>
   <true/>
+  <key>TouchGrassNodeExecutable</key>
+  <string></string>
+  <key>TouchGrassMonitorScript</key>
+  <string></string>
 </dict>
 </plist>

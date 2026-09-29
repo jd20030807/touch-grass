@@ -44,13 +44,13 @@ Open any Codex or Claude Code conversation and say:
 
 > Import Touch Grass from https://github.com/jd20030807/touch-grass
 
-Your agent will download Touch Grass, install it for your account, and open the local reminder companion. Let it finish the setup, and approve Touch Grass if Codex or Claude Code asks for permission to enable it.
+Your agent will download Touch Grass, install it for your account, and open the local reminder companion. Once the welcome banner appears, automatic timing is ready—there is no separate hook approval for the desktop apps.
 
 When installation is complete, start a new Codex task or Claude Code session and say:
 
 > Introduce Touch Grass and tell me how I can personalize it.
 
-Touch Grass will then be available in every new conversation in that app.
+Touch Grass will then be available in every new conversation in that app. The timer itself already works outside the conversation: it pauses when the coding app is closed or no longer in front, and resumes when you reopen it and start using your Mac again.
 
 ## Updating
 
@@ -98,9 +98,9 @@ To see your current routine, ask:
 
 ## Using Codex and Claude Code together
 
-**If you use both, install Touch Grass in both.** This does not double anything up, and it is the only way your time adds up properly. Touch Grass only counts the hours you spend in an app it is installed in, so if you install it in Claude Code alone, your Codex hours count for nothing — and once you have been away from Claude Code long enough, it decides you have stepped away from the computer and starts your timers over.
+Once the local companion is installed, it recognizes both Codex and Claude Desktop. Switching between them keeps one shared coding stretch, and closing either app pauses its contribution until you reopen it.
 
-Once it is in both, the two behave as one. Your water, stretch, and eye-rest timers are the same wherever you are, and each reminder appears exactly once, never twice. Switching apps keeps your streak going: twenty minutes in Codex followed by ten in Claude Code is half an hour of coding, not two separate starts. Change a reminder in either app and the other picks it up right away.
+Install the plugin in both apps if you want to change your routine conversationally from either one. This does not create duplicate schedules: your water, stretch, and eye-rest timers remain shared, and each reminder appears once. Optional plugin hooks can also count Codex CLI, Claude Code CLI, and supported editor sessions after you review them.
 
 ## Add your own companion
 

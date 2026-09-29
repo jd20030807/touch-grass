@@ -21,7 +21,15 @@ if [ -z "$plugin_version" ]; then
   printf '%s\n' 'Could not read the plugin version; refusing to build an unstamped helper.' >&2
   exit 1
 fi
+node_executable=$(command -v node)
+monitor_script="$plugin_root/bin/touch-grass.mjs"
+if [ ! -x "$node_executable" ] || [ ! -f "$monitor_script" ]; then
+  printf '%s\n' 'Could not locate the local Touch Grass scheduler; refusing to build an incomplete helper.' >&2
+  exit 1
+fi
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $plugin_version" "$contents_dir/Info.plist"
+/usr/bin/plutil -replace TouchGrassNodeExecutable -string "$node_executable" "$contents_dir/Info.plist"
+/usr/bin/plutil -replace TouchGrassMonitorScript -string "$monitor_script" "$contents_dir/Info.plist"
 swiftc \
   -parse-as-library \
   -module-cache-path "$cache_dir" \

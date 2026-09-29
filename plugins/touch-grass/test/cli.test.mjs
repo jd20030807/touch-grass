@@ -229,6 +229,51 @@ test('a helper too old to report its version is flagged, not passed as healthy',
   }
 });
 
+test('doctor requires a live native scheduler instead of passing on popup health alone', async () => {
+  const home = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-cli-'));
+  const bridge = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-bridge-'));
+  try {
+    const version = JSON.parse(await readFile(path.join(pluginRoot, '.claude-plugin', 'plugin.json'), 'utf8')).version;
+    const now = new Date().toISOString();
+    await writeFile(path.join(bridge, 'presence.json'), JSON.stringify({
+      schemaVersion: 1,
+      helperInstanceId: 'helper-test',
+      stretchId: 'stretch-test',
+      stretchEngagedMs: 0,
+      sampledAt: now,
+      engaged: false
+    }));
+    await writeFile(path.join(bridge, 'helper.json'), JSON.stringify({
+      pid: 1,
+      version,
+      schedulerReady: false,
+      directAppTracking: true,
+      updatedAt: now
+    }));
+
+    const disconnected = JSON.parse(run(['doctor'], home, { TOUCH_GRASS_BRIDGE_DIR: bridge }).stdout);
+    assert.equal(disconnected.popupReady, true);
+    assert.equal(disconnected.helperVersionMatches, true);
+    assert.equal(disconnected.activityTrackingReady, false);
+    assert.equal(disconnected.ok, false);
+    assert.match(disconnected.activityTrackingHint, /automatic timing is not connected/i);
+
+    await writeFile(path.join(bridge, 'helper.json'), JSON.stringify({
+      pid: 1,
+      version,
+      schedulerReady: true,
+      directAppTracking: true,
+      updatedAt: new Date().toISOString()
+    }));
+    const connected = JSON.parse(run(['doctor'], home, { TOUCH_GRASS_BRIDGE_DIR: bridge }).stdout);
+    assert.equal(connected.activityTrackingReady, true);
+    assert.equal(connected.ok, true);
+  } finally {
+    await rm(bridge, { recursive: true, force: true });
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
 test('doctor abbreviates the home directory instead of naming the user', async () => {
   const home = await mkdtemp(path.join(os.homedir(), '.touch-grass-doctor-'));
   try {

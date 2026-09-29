@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { publishAgentSession } from '../src/bridge.mjs';
 import { defaultConfig, saveConfig } from '../src/config.mjs';
-import { inferHost, previewReminder, recordActivity } from '../src/engine.mjs';
+import { inferHost, previewReminder, recordActivity, tickActivity } from '../src/engine.mjs';
 
 async function tempEnv() {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'touch-grass-engine-'));
@@ -76,6 +76,55 @@ test('hook frequency alone never advances reminder clocks', async () => {
     assert.equal('lastHookAt' in result.state, false);
     assert.equal('lastEventName' in result.state, false);
     assert.equal('lastHost' in result.state, false);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('the native scheduler advances and delivers reminders without an agent lease', async () => {
+  const { directory, env } = await tempEnv();
+  try {
+    const config = defaultConfig();
+    config.disabledPresetIds = ['water', 'stretch', 'snack', 'walk', 'bedtime', 'lunch', 'dinner'];
+    config.reminderSchedules.eyes.intervalMinutes = 1;
+    await saveConfig(config, env);
+    const base = localTime(12);
+
+    await writePresence(env, base, { stretchEngagedMs: 0 });
+    await tickActivity({ env, nowMs: base });
+    await assert.rejects(
+      readdir(path.join(env.TOUCH_GRASS_BRIDGE_DIR, 'sessions')),
+      { code: 'ENOENT' },
+      'desktop timing must not manufacture or require an agent lease'
+    );
+
+    await writePresence(env, base + 60_000, { stretchEngagedMs: 60_000 });
+    const delivered = [];
+    const result = await tickActivity({
+      env,
+      nowMs: base + 60_000,
+      deliver: (payload) => { delivered.push(payload.id); }
+    });
+    assert.equal(result.due, true);
+    assert.deepEqual(delivered, ['eyes']);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('clock reminders are evaluated by the native scheduler without hooks', async () => {
+  const { directory, env } = await tempEnv();
+  try {
+    const config = defaultConfig();
+    config.disabledPresetIds = ['water', 'stretch', 'walk', 'eyes', 'bedtime', 'lunch', 'dinner'];
+    await saveConfig(config, env);
+    const nowMs = localTime(10, 30);
+    await writePresence(env, nowMs, { engaged: true });
+
+    const result = await tickActivity({ env, nowMs, deliver: () => {} });
+    assert.equal(result.due, true);
+    assert.equal(result.payload.id, 'snack');
+    await assert.rejects(readdir(path.join(env.TOUCH_GRASS_BRIDGE_DIR, 'sessions')), { code: 'ENOENT' });
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

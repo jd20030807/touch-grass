@@ -20,6 +20,10 @@ private struct SessionContext {
     var awayResetMinutes: Double = 10
 }
 
+private struct TouchGrassConfiguration: Decodable {
+    let idleResetMinutes: Double?
+}
+
 @MainActor
 private enum PresenceDetector {
     private static let codexBundleIdentifier = "com.openai.codex"
@@ -57,20 +61,29 @@ private enum PresenceDetector {
     private static let ideVendorPrefixes = ["com.jetbrains."]
 
     static func foregroundMatches(_ hosts: Set<String>) -> Bool {
-        guard !hosts.isEmpty, let application = NSWorkspace.shared.frontmostApplication else { return false }
+        guard let application = NSWorkspace.shared.frontmostApplication else { return false }
         let bundleIdentifier = application.bundleIdentifier?.lowercased() ?? ""
 
-        let isCodexDesktop = bundleIdentifier == codexBundleIdentifier
-        let isClaudeDesktop = bundleIdentifier == claudeDesktopBundleIdentifier
+        return foregroundMatches(bundleIdentifier: bundleIdentifier, hosts: hosts)
+    }
+
+    static func foregroundMatches(bundleIdentifier: String, hosts: Set<String>) -> Bool {
+        let normalizedIdentifier = bundleIdentifier.lowercased()
+
+        let isCodexDesktop = normalizedIdentifier == codexBundleIdentifier
+        let isClaudeDesktop = normalizedIdentifier == claudeDesktopBundleIdentifier
+        // Desktop apps are first-class hosts. The companion can recognize them
+        // without reading a task, prompt, title, or plugin hook, so reopening
+        // either app resumes counting automatically.
+        if isCodexDesktop || isClaudeDesktop { return true }
+
         // A terminal counts for whichever agent holds the lease. Both Codex and
         // Claude Code are commonly run from one, and the lease already says
         // which of them is live.
-        let isTerminalHost = terminalBundleIdentifiers.contains(bundleIdentifier)
-            || ideVendorPrefixes.contains { bundleIdentifier.hasPrefix($0) }
+        let isTerminalHost = terminalBundleIdentifiers.contains(normalizedIdentifier)
+            || ideVendorPrefixes.contains { normalizedIdentifier.hasPrefix($0) }
 
-        if hosts.contains("codex") && (isCodexDesktop || isTerminalHost) { return true }
-        if hosts.contains("claude-code") && (isClaudeDesktop || isTerminalHost) { return true }
-        if hosts.contains("agent") && (isCodexDesktop || isClaudeDesktop || isTerminalHost) { return true }
+        if isTerminalHost && !hosts.isDisjoint(with: ["codex", "claude-code", "agent"]) { return true }
         return false
     }
 
@@ -91,6 +104,9 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
     private var pollTimer: Timer?
     private var heartbeatTimer: Timer?
     private var presenceTimer: Timer?
+    private var schedulerTimer: Timer?
+    private var schedulerProcess: Process?
+    private var isTerminating = false
 
     private let helperInstanceId = UUID().uuidString
     private var stretchId = UUID().uuidString
@@ -147,6 +163,7 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
                 withIntermediateDirectories: true,
                 attributes: [.posixPermissions: 0o700]
             )
+            ensureScheduler()
             writeHeartbeat()
             samplePresence()
         } catch {
@@ -175,12 +192,51 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
             userInfo: nil,
             repeats: true
         )
+        schedulerTimer = Timer.scheduledTimer(
+            timeInterval: 10,
+            target: self,
+            selector: #selector(ensureScheduler),
+            userInfo: nil,
+            repeats: true
+        )
         checkForReminder()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        isTerminating = true
+        schedulerProcess?.terminate()
         try? FileManager.default.removeItem(at: heartbeatURL)
         try? FileManager.default.removeItem(at: presenceURL)
+    }
+
+    @objc private func ensureScheduler() {
+        guard !isTerminating, schedulerProcess?.isRunning != true else { return }
+        schedulerProcess = nil
+        guard
+            let nodePath = Bundle.main.infoDictionary?["TouchGrassNodeExecutable"] as? String,
+            let monitorScript = Bundle.main.infoDictionary?["TouchGrassMonitorScript"] as? String,
+            FileManager.default.isExecutableFile(atPath: nodePath),
+            FileManager.default.fileExists(atPath: monitorScript)
+        else {
+            writeHeartbeat()
+            return
+        }
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: nodePath)
+        process.arguments = [monitorScript, "monitor"]
+        var environment = ProcessInfo.processInfo.environment
+        environment["TOUCH_GRASS_PARENT_PID"] = String(ProcessInfo.processInfo.processIdentifier)
+        process.environment = environment
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+            schedulerProcess = process
+        } catch {
+            schedulerProcess = nil
+        }
+        writeHeartbeat()
     }
 
     @objc private func writeHeartbeat() {
@@ -188,6 +244,8 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
             "pid": ProcessInfo.processInfo.processIdentifier,
             // Lets the plugin notice it is talking to an older helper build.
             "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
+            "schedulerReady": schedulerProcess?.isRunning == true,
+            "directAppTracking": true,
             "updatedAt": ISO8601DateFormatter().string(from: Date())
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: heartbeat) else { return }
@@ -203,14 +261,14 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
     }
 
     private func activeSessionContext(at now: Date) -> SessionContext {
-        var context = SessionContext(awayResetMinutes: currentAwayResetMinutes)
+        let configuredReset = configuredAwayResetMinutes()
+        var context = SessionContext(awayResetMinutes: configuredReset)
         guard let leaseURLs = try? FileManager.default.contentsOfDirectory(
             at: sessionsDirectory,
             includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
         ) else { return context }
 
-        var resetValues: [Double] = []
         for leaseURL in leaseURLs where leaseURL.pathExtension == "json" {
             guard
                 let data = try? Data(contentsOf: leaseURL),
@@ -225,13 +283,29 @@ final class TouchGrassApp: NSObject, NSApplicationDelegate, WKScriptMessageHandl
                 continue
             }
             context.hosts.insert(lease.host.lowercased())
-            resetValues.append(min(180, max(1, lease.awayResetMinutes)))
-        }
-        if let requestedReset = resetValues.min() {
-            context.awayResetMinutes = requestedReset
-            currentAwayResetMinutes = requestedReset
         }
         return context
+    }
+
+    private func configuredAwayResetMinutes() -> Double {
+        let environment = ProcessInfo.processInfo.environment
+        let dataDirectory: URL
+        if let override = environment["TOUCH_GRASS_HOME"], !override.isEmpty {
+            dataDirectory = URL(fileURLWithPath: override, isDirectory: true)
+        } else {
+            dataDirectory = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".touch-grass", isDirectory: true)
+        }
+        let configURL = dataDirectory.appendingPathComponent("config.json")
+        guard
+            let data = try? Data(contentsOf: configURL),
+            let config = try? JSONDecoder().decode(TouchGrassConfiguration.self, from: data),
+            let requested = config.idleResetMinutes,
+            requested.isFinite
+        else { return currentAwayResetMinutes }
+
+        currentAwayResetMinutes = min(180, max(1, requested))
+        return currentAwayResetMinutes
     }
 
     private func foregroundMatches(_ hosts: Set<String>) -> Bool {

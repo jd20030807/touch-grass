@@ -140,8 +140,12 @@ test('macOS presence sampling uses aggregate idle age without privileged event c
   assert.match(swift, /frontmostApplication/);
   assert.match(swift, /com\.openai\.codex/);
   assert.match(swift, /com\.anthropic\.claudefordesktop/);
-  assert.match(swift, /isClaudeDesktop \|\| isTerminalHost/);
-  assert.match(swift, /hosts\.contains\("codex"\) && \(isCodexDesktop \|\| isTerminalHost\)/);
+  assert.match(swift, /if isCodexDesktop \|\| isClaudeDesktop \{ return true \}/);
+  assert.match(swift, /isTerminalHost && !hosts\.isDisjoint/);
+  assert.match(swift, /TouchGrassMonitorScript/);
+  assert.match(swift, /"monitor"/);
+  assert.match(plist, /TouchGrassNodeExecutable/);
+  assert.match(plist, /TouchGrassMonitorScript/);
   assert.doesNotMatch(swift, /allowingReadAccessTo: URL\(fileURLWithPath: "\/"\)/);
   assert.doesNotMatch(swift, /CGEvent\.tapCreate|NSEvent\.addGlobalMonitor/);
   assert.doesNotMatch(plist, /Accessibility|InputMonitoring|ScreenCapture|ScreenRecording/i);

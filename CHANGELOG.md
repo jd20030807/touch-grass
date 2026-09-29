@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.10 - 2026-09-28
+
+- Count Codex and Claude Desktop activity directly in the local companion, without requiring trusted lifecycle hooks
+- Run reminder schedules from the always-on companion so active-time, snack, meal, wind-down, and bedtime reminders work independently of chat events
+- Resume counting automatically whenever either desktop app is reopened, frontmost, and the Mac has recent input
+- Keep hooks as an optional signal for terminal and editor sessions
+- Make health checks fail clearly when automatic timing is disconnected, instead of treating a working popup window as a healthy timer
+
 ## 0.1.9 - 2026-08-27
 
 - Bring a hidden bundled cat back by choosing her again, instead of leaving no way back short of resetting everything
